@@ -1,0 +1,20 @@
+{
+  "name": "XLMS",
+  "author": "http://github.com/riggs",
+  "description": "XLMS Chrome App",
+  "version": "0.1.0",
+  "manifest_version": 2,
+  "app": {
+    "background": {
+      "scripts": ["background.js"]
+    }
+  },
+  "url_handlers": {
+    "launch_exercise": {
+      "matches": [
+        "http://xlms.org/exercise/*"
+      ],
+      "title": "Launch Exercise"
+    }
+  }
+}

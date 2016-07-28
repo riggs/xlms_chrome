@@ -1,0 +1,4 @@
+{
+  "plugins": ["react", "es2015", "es2016"],
+  "sourceMaps": true
+}
