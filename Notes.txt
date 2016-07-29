@@ -1,0 +1,14 @@
+
+Keep system from sleeping while exercise is running:
+    // https://developer.chrome.com/apps/power
+    chrome.power.requestKeepAwake("display");
+
+Figure out workflow for installing and then launching app when not installed.
+
+video.js(x?) provides an easy api to let plugins start/stop recording while still controlling the pipeline from XLMS
+
+Pokey UX:
+    Click link in XLMS, App launches
+    UI: Video display, box status (tools connected & in holder?), 'Record' button
+    Once tools are ready, 'Record' button enabled
+    Once recording, when tools are removed, exercise starts, is displayed in status

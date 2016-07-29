@@ -1,9 +1,10 @@
 {
+  "manifest_version": 2,
   "name": "XLMS",
   "author": "http://github.com/riggs",
   "description": "XLMS Chrome App",
   "version": "0.1.0",
-  "manifest_version": 2,
+  "version_name": "alpha",
   "app": {
     "background": {
       "scripts": ["background.js"]
@@ -16,5 +17,24 @@
       ],
       "title": "Launch Exercise"
     }
+  },
+  "permissions": [
+    "hid",
+    {"usbDevices": [
+        {"vendorId": 1003, "productId": 8256}
+    ]},
+    "http://xlms.org",
+    "power",
+    "audioCapture",
+    "videoCapture",
+    "webview"
+  ],
+  "webview": {
+    "partitions": [
+      {
+        "name": "plugin",
+        "accessible_resources": ["lib/video.js"]
+      }
+    ]
   }
 }
