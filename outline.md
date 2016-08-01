@@ -4,20 +4,21 @@ App Workflow
 UI Window
 ---------
 1. Launch.
+    * Handled in background.js.
     * Show error message if not launched via XLMS.
     * Open UI wrapper in fullscreen.
-    * **TODO**: Make sure User Input window displays properly when app fullscreen.
-    * Handled in background.js.
+        * Configure user_input API from wrapper.js
+        * **TODO**: Make sure User Input window displays properly when app fullscreen.
 1. Get REST data from XLMS.
-    * Endpoint URL encoded as query parameter in `launchData.url`.
+    * Endpoint URL encoded as `endpoint` query parameter in `launchData.url`.
     * Error if invalid session data.
 1. Search for appropriate detected device.
     * Device ID via REST data.
     * Error if not found.
     * Error if multiples found.
-    * Future work: UI to select device, match against REST data.
+    * Future work: UI to select device, filtered by REST data.
 1. Configure video API.
-1. Load webview.
+1. Load plugin.
     * URL from REST data.
     * Listen for `contentload` event.
 1. Connect to device.
@@ -27,15 +28,15 @@ UI Window
     1. Flag device as connected.
 
 ### Triggered Events
-* On webview `contentload` event:
+* On plugin `contentload` event:
     1. Send configuration, metrics, device IDs.
         * From REST data and connected device.
     1. Add listener for `message` events:
         * user_input
         * results
-    1. Flag webview as loaded.
+    1. Flag plugin as loaded.
 
-* Once both webview has loaded and proper device is connected:
+* Once both plugin has loaded and proper device is connected:
     1. Send timestamp.
     1. Start receive polling loop.
         * Pass all USB messages to plugin via [`webview.contentWindow.postMessage` API](https://developer.chrome.com/apps/tags/webview#type-ContentWindow).

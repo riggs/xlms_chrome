@@ -3,3 +3,8 @@
  *
  * Provides an API for XLMS plugins to control video recording.
  */
+
+
+export function configure(kurento_config) {
+  // TODO: FIXME
+}
