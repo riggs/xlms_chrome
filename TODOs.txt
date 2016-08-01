@@ -1,4 +1,6 @@
 
+babel-polyfill
+
 Keep system from sleeping while exercise is running:
     // https://developer.chrome.com/apps/power
     chrome.power.requestKeepAwake("display");
@@ -11,4 +13,11 @@ Pokey UX:
     Click link in XLMS, App launches
     UI: Video display, box status (tools connected & in holder?), 'Record' button
     Once tools are ready, 'Record' button enabled
-    Once recording, when tools are removed, exercise starts, is displayed in status
+    Once recording, when tools are removed, exercise starts, elapsed time is displayed in status
+
+Peggy UX:
+    Launch via XLMS
+    UI: Peg state display: un/covered, Video display, 'Record' button
+    Once tools and pegs are in place, 'Record' button enabled
+    Once recording, when tools are removed, exercise starts, elapsed time is displayed in status
+    Peg state display always live updating

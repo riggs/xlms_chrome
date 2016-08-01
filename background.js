@@ -14,7 +14,7 @@ chrome.app.runtime.onLaunched.addListener((launch_data) => {
   } else {
     // App wasn't launched from XLMS.
     // TODO: Figure out bounds
-    chrome.app.window.create("error.html", {id: "error"}, (error_window) => {
+    chrome.app.window.create("user_input.html", {id: "Launch_error"}, (error_window) => {
       error_window.contentWindow.error_message = "App much be launched from XLMS.";
       // TODO: Configure error buttons
     })
