@@ -9,8 +9,8 @@
 import * as URI from 'urijs';
 
 // Internal imports.
-import {endpoint_query_parameter} from 'constants';
-import user_input from 'user_input';
+import {endpoint_query_parameter} from './constants';
+import user_input from './user_input';
 
 
 export function parse_launch_URL() {

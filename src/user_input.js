@@ -8,4 +8,5 @@
 
 export default function (message_string, options) {
   // TODO: FIXME
+  console.log("message_string");
 }

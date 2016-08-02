@@ -1,6 +1,8 @@
 {
+  "presets": [
+    "es2016"
+  ],
   "plugins": [
-    "es2016",
     "transform-es2015-modules-commonjs",
     "transform-async-to-generator"
   ],

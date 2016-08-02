@@ -4,12 +4,12 @@
 
 
 // Internal imports.
-import user_input_init from 'user_input_window';
-import user_input from 'user_input';
-import * as XLMS_REST from 'XLMS_REST';
-import * as video from 'video';
-import {vendor_ID_key, product_ID_key} from 'constants';
-import device from 'device';
+import user_input_init from './user_input_window';
+import user_input from './user_input';
+import * as XLMS_REST from './XLMS_REST';
+import * as video from './video';
+import {vendor_ID_key, product_ID_key} from './constants';
+import device from './device';
 
 
 function get_device(device_filter, callback) {

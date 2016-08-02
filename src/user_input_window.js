@@ -5,6 +5,13 @@
  * Responds to messages from user_input.js.
  */
 
+import ChromePromise from 'chrome-promise';
+
+chrome.promise = new ChromePromise();
+
+window.ChromePromise = ChromePromise;
+
+
 // TODO: Determine required config parameters
 export default function (config) {
 

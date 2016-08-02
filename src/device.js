@@ -4,6 +4,10 @@
  * API for communicating with XLMS HID device.
  */
 
+import ChromePromise from 'chrome-promise';
+
+chrome.promise = new ChromePromise();
+
 const device ={
   connection_ID: null,
   reports: {},
@@ -37,12 +41,11 @@ function not_connected() {
 
 // TODO: Use async/await
 
-export function receive(callback) {
+export async function receive() {
   if (not_connected()) return;
-  chrome.hid.receive(connection_ID, (report_ID, data_buffer) => {
-    let {name, unpack} = device.reports[report_ID][INPUT_REPORT];
-    callback(name, unpack(data_buffer));
-  })
+  let report_ID, data_buffer = await chrome.promise.hid.receive(connection_ID);
+  let {name, unpack} = device.reports[report_ID][INPUT_REPORT];
+  return {name: name, data: unpack(data_buffer)};
 }
 
 
@@ -64,10 +67,7 @@ export function set_feature(report_name, data, callback) {
 }
 
 
-export default function (device_ID) {
-  chrome.hid.connect(device_ID, (connection) => {
-    device.connection_ID = connection.connectionId;
-
-  });
+export default async function (device_ID) {
+  device.connection_ID = await chrome.promise.hid.connect(device_ID).connectionId;
   // TODO: Error handling.
 }
