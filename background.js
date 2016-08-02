@@ -5,7 +5,8 @@
 // https://developer.chrome.com/apps/app_runtime#event-onLaunched
 chrome.app.runtime.onLaunched.addListener((launch_data) => {
   // If app was launched from XLMS.
-  if (launch_data.id === "launch_exercise") {
+  // if (launch_data.id === "launch_exercise") {
+  if (true) {
     // https://developer.chrome.com/apps/app_window#method-create
     chrome.app.window.create("wrapper.html", {id: "wrapper", state: "fullscreen"}, (main_window) => {
       // Set `window.launch_url` in the created window.
