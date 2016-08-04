@@ -9,32 +9,10 @@ import user_input from './user_input';
 import * as XLMS_REST from './XLMS_REST';
 import * as video from './video';
 import {vendor_ID_key, product_ID_key} from './constants';
-import device from './device';
+import * as device from './device';
 
 
-function get_device(device_filter, callback) {
-  chrome.hid.getDevices(device_filter, (devices) => {
-    switch (devices.length) {
-      case 0:
-        // TODO: Display error window for no detected devices.
-        break;
-      case 1:
-        // FIXME: use async await
-        callback(devices[0]);
-        break;
-      default:
-        // TODO: Display error window for too many connected devices.
-        user_input("Error: Multiple devices detected.", {
-          Refresh: () => {get_device(device_filter, callback)},
-          Quit: () => chrome.app.window.current().close()
-        });
-        break;
-    }
-  });
-}
-
-
-function init() {
+async function init() {
 
   // TODO: Determine required config.
   user_input_init(config);
@@ -51,18 +29,35 @@ function init() {
     device_filter.push({vendorId: device[vendor_ID_key], productId: device[product_ID_key]})
   });
 
-  // FIXME: use async/await
-  get_device(device_filter, (connected_device) => {
-    // TODO: Implement
-    video.configure(session_data.video_configuration);
+  // Ensure a compatible device is connected.
+  let connected_device = null;
+  while (connected_device === null) {
+    try {
+      connected_device = await device.find(device_filter);
+    } catch(error) {
+      // TODO: Display error window for too many connected devices.
+      return await user_input(`Error: ${error.message}`, {
+        Refresh: async () => {
+          connected_device = await device.find(device_filter);
+        },
+        Quit: () => chrome.app.window.current().close()
+      });
+    }
+  }
 
-    const plugin = document.getElementById('plugin');
-    plugin.src = session_data.plugin_URL;
-    // TODO: Setup listeners for when plugin webview loads.
+  // TODO: Implement
+  video.configure(session_data.video_configuration);
 
-    device(connected_device.deviceId);
-  });
+  // Load plugin.
+  const plugin = document.getElementById('plugin');
+  plugin.src = session_data.plugin_URL;
+  // TODO: Setup listeners for when plugin webview loads.
+
+  // Connect to device.
+  await device.initialize(connected_device.deviceId);
+
 
 }
 
-window.addEventListener('load', init);
+// window.addEventListener('load', init);
+window.device = device;
