@@ -5,17 +5,25 @@
   "main": "background.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "browserify src/wrapper.js -o lib/wrapper.js && browserify src/user_input_window.js -d -o lib/user_input_window.js"
+    "build_app": "browserify src/wrapper.js -d -o lib/wrapper.js && browserify src/user_input_window.js -d -o lib/user_input_window.js && browserify src/XLMS.js -d -o lib/XLMS.js",
+    "build_plugins": "browserify orthoboxes_plugins/pokey.js -d -o orthoboxes_plugins/pokey_deploy/pokey_bundle.js && browserify orthoboxes_plugins/peggy.js -d -o orthoboxes_plugins/peggy_deploy/peggy_bundle.js",
+    "build": "npm run build_app && npm run build_plugins"
   },
   "browserify": {
-    "transform": [["babelify", {"presets": ["es2016"], "plugins": ["transform-async-to-generator"]}]]
-  },
-  "babel": {
-    "presets": [
-      "es2016"
-    ],
-    "plugins": [
-      "transform-async-to-generator"
+    "transform": [
+      [
+        "babelify",
+        {
+          "presets": [
+            "es2016",
+            "react"
+          ],
+          "plugins": [
+            "transform-es2015-modules-commonjs",
+            "transform-async-to-generator"
+          ]
+        }
+      ]
     ]
   },
   "repository": {
@@ -29,7 +37,10 @@
   },
   "homepage": "https://github.com/riggs/xlms_chrome#readme",
   "dependencies": {
-    "chrome-promise": "^1.0.6",
+    "babel-preset-react": "^6.11.1",
+    "chrome-promise": "^2.0.0",
+    "react": "^15.3.0",
+    "react-dom": "^15.3.0",
     "urijs": "^1.18.1"
   },
   "devDependencies": {

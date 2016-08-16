@@ -1,12 +1,19 @@
 /**
  * Created by riggs on 7/29/16.
  *
- * Controls displaying UI to user to get input.
- * Responds to messages from user_input.js.
+ * Code run by the created user input window.
  */
+'use strict';
 
 
-// TODO: Determine required config parameters
-export default function (config) {
+// Close user input window if the main window is closed.
+// window.creator.onClosed.addListener(() => chrome.app.window.current().close());
+
+// TODO: Display shit.
+
+function init() {
+  document.getElementById('message').textContent = window.message;
 
 }
+
+window.addEventListener('load', init);

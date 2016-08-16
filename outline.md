@@ -51,19 +51,19 @@ User Input Window
 -----------------
 New calls to API just replace message and buttons, don't create new windows.
 ### API for plugins
-* user_input(message_string, {Option: callback})
+* user_input(message_string, options={key: value})
     * message_string, required: displayed to the user
-    * Options object, at least one key & cb required:
+    * options object, at least one key & value required:
         * Keys are displayed to users as buttons.
-        * Callback called based on user selection.
-        * If user closes window instead, call last callback.
+        * value returned based on user selection.
+        * If user closes window instead, return last value
 
 ### Implementation
-1. Send `user_input` message from plugin to app:
+1. Send `user_input_request` message from plugin to app:
     * message_string
-    * options array: user selectable options, keys from Options object.
-1. Upon user selection, send `user_input_result` message with selected option
-1. Call appropriate callback.
+    * options array: user selectable options, keys from options object.
+1. Upon user selection, send `user_input_result` message with selected option.
+1. Return appropriate value.
 
 Plugin Framework
 ----------------

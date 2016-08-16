@@ -3,13 +3,17 @@
  *
  * API for communicating with XLMS HID device.
  */
+"use strict";
+
+// App-wide DEBUG logging function.
+// import DEBUG from "./debug_logger";
 
 // External Libraries.
 import ChromePromise from 'chrome-promise';
 chrome.promise = new ChromePromise();
 
 
-// Byte flags from protocol also used in lieu of strings for keys.
+// Byte flags from protocol, also as keys.
 const INPUT_REPORT = 0x01;
 const OUTPUT_REPORT = 0x02;
 const FEATURE_REPORT = 0x04;
@@ -17,32 +21,38 @@ const FEATURE_REPORT = 0x04;
 
 // Base structure for object used to hold de/serialization functions for HID reports.
 // This allows for overloading initial `get_feature('admin')` call to populate object.
-const DEFAULT_DEVICE = {
-  device_ID: null,
-  connection_ID: null,
-  reports: {
-    1: {
-      [FEATURE_REPORT]: {
-        name: "admin",
-        pack: () => {},
-        unpack: parse_admin_report
-      }
+export let device = {};
+
+export function initialize_device() {
+  // Copy default values into device object.
+  Object.assign(device,
+    {
+      device_ID: null,
+      connection_ID: null,
+      reports: {
+        1: {
+          [FEATURE_REPORT]: {
+            name: "admin",
+            pack: () => {},
+            unpack: parse_admin_report
+          }
+        }
+      },
+      report_names: {
+        [INPUT_REPORT]: {},
+        [OUTPUT_REPORT]: {},
+        [FEATURE_REPORT]: {
+          'admin': 1,
+        }
+      },
     }
-  },
-  report_names: {
-    [INPUT_REPORT]: {},
-    [OUTPUT_REPORT]: {},
-    [FEATURE_REPORT]: {
-      'admin': 1,
-    }
-  },
-};
-
-let device = DEFAULT_DEVICE;
+  );
+}
+initialize_device();
 
 
-let utf_8_decode = new TextDecoder('utf-8', {fatal: true}).decode;
-let utf_8_encode = new TextEncoder('utf-8', {fatal: true}).encode;
+let utf_8_decoder = new TextDecoder('utf-8', {fatal: true});
+let utf_8_encoder = new TextEncoder('utf-8', {fatal: true});
 
 
 export class DeviceError extends Error {}
@@ -50,6 +60,7 @@ export class DeviceError extends Error {}
 
 function parse_admin_report(buffer) {
 
+  // FIXME: Handle future versions of protocol.
   // Defined by the protocol.
   let admin_report = new Uint8Array([0x00, 0x0D, 0x01, 0x04, 0x05, 0x61, 0x64, 0x6D, 0x69, 0x6E, 0x01, 0x00, 0x00]);
 
@@ -66,12 +77,17 @@ function parse_admin_report(buffer) {
   // Iterate and compare arrays.
   for (let i = 0; i < admin_report.byteLength; i++) {
     if (admin_report[i] !== current_report[i]) {
+      // FIXME: Handle future versions of protocol.
+      // DEBUG(`byte ${i} discrepancy: admin: ${admin_report[i]}, report: ${current_report[i]}`);
+      reset_module(device.device_ID);
       throw new DeviceError("Incompatible device.");
     }
   }
 
   // Device appears to be compatible, update byte offset for next Report.
   report_start_byte_offset += admin_report.byteLength;
+
+  let result = current_report;
 
   // Parse the rest of the report and build the object to hold de/serialization functions.
   while (report_start_byte_offset < buffer.byteLength) {
@@ -83,33 +99,37 @@ function parse_admin_report(buffer) {
     let report_parser_byte_offset = 0;
 
     let report_length = current_report.getUint16(report_parser_byte_offset);
+    // DEBUG(`report_length: ${report_length}`);
     report_parser_byte_offset += 2;
 
     let report_ID = current_report.getUint8(report_parser_byte_offset);
+    // DEBUG(`report_ID: ${report_ID}`);
     report_parser_byte_offset += 1;
 
     let report_types_byte = current_report.getUint8(report_parser_byte_offset);
+    // DEBUG(`report_type_byte: ${report_types_byte}`);
     report_parser_byte_offset += 1;
 
     let report_types = [];
-    for (const report_type in [INPUT_REPORT, OUTPUT_REPORT, FEATURE_REPORT]) {
-      // Bit-wise AND to check for flags.
+    [INPUT_REPORT, OUTPUT_REPORT, FEATURE_REPORT].forEach(report_type => {
       if (report_types_byte & report_type) {
         report_types.push(report_type);
       }
-    }
+    });
+    // DEBUG('report_types: ', report_types);
 
     let report_name_length = current_report.getUint8(report_parser_byte_offset);
     report_parser_byte_offset += 1;
 
     // Decode from a new view of the buffer only containing the name in UTF-8 bytes.
-    let report_name = utf_8_decode(new Uint8Array(buffer, report_start_byte_offset + report_parser_byte_offset, report_name_length));
+    let report_name = utf_8_decoder.decode(new Uint8Array(buffer, report_start_byte_offset + report_parser_byte_offset, report_name_length));
+    // DEBUG(`report_name: ${report_name}`);
     report_parser_byte_offset += report_name_length;
 
     // Update name: ID mapping in `device` object.
-    for (const report_type in report_types) {
+    report_types.forEach(report_type => {
       device.report_names[report_type][report_name] = report_ID;
-    }
+    });
 
     // Build parser for report data.
 
@@ -142,11 +162,16 @@ function parse_admin_report(buffer) {
 
           // Add de/serialization functions.
           let length = utf_8_length;
-          unpack_funcs.push((buffer) => utf_8_decode(new Uint8Array(buffer, offset, length)));
+          // unpack_funcs.push((buffer) => utf_8_decoder.decode(new Uint8Array(buffer, offset, length)));
+          unpack_funcs.push((buffer) => {
+            // DEBUG(`utf8 unpack ${hex_parser(buffer.slice(offset, length))}`);
+            return utf_8_decoder.decode(new Uint8Array(buffer, offset, length))
+          });
           pack_funcs.push((text, buffer) => {
-            let utf_8 = utf_8_encode(text);
+            let utf_8 = utf_8_encoder.encode(text);
             let view = new Uint8Array(buffer, offset, length);
             view.set(utf_8);
+            // DEBUG("utf8 pack ", hex_parser(buffer.slice(offset, length)));
           });
 
           // Set length to what was actually consumed.
@@ -163,21 +188,36 @@ function parse_admin_report(buffer) {
               // converts to Int32 before performing bitwise operations.
               const max_Uint32 = 2**32;
               unpack_funcs.push((buffer) => {
-                let [high, low] = new Uint32Array(buffer, offset, serialization_length);
+                // Uint32Array length parameter is length of Uint32Array, to be created, not byte length.
+                let data_view = new DataView(buffer, offset, serialization_length);
+                let high = data_view.getUint32(0);
+                let low = data_view.getUint32(4);
+                // DEBUG(`Uint64 unpack ${hex_parser(buffer.slice(offset, serialization_length))} to ${high * max_Uint32 + low}`);
                 return high * max_Uint32 + low;
               });
               pack_funcs.push((value, buffer) => {
                 let high = Math.floor(value/max_Uint32);
                 let low = value % max_Uint32;
-                new Uint32Array(buffer, offset, serialization_length).set([high, low]);
+                let data_view = new DataView(buffer, offset, serialization_length);
+                data_view.setUint32(0, high);
+                data_view.setUint32(4, low);
+                // DEBUG(`Uint64 pack ${value} to ${hex_parser(buffer.slice(offset, serialization_length))}`)
               });
               break;
             case 1:   // Uint8
             case 2:   // Uint16
             case 4:   // Uint32
               let bits = serialization_length * 8;
-              unpack_funcs.push((buffer) => new DataView(buffer)[`getUint${bits}`](offset));
-              pack_funcs.push((value, buffer) => new DataView(buffer)[`setUint${bits}`](offset, value));
+              // unpack_funcs.push((buffer) => new DataView(buffer)[`getUint${bits}`](offset));
+              unpack_funcs.push((buffer) => {
+                // DEBUG(`DataView(${hex_parser(buffer)}).getUint${bits}(${offset})`);
+                return new DataView(buffer)[`getUint${bits}`](offset)
+              });
+              // pack_funcs.push((value, buffer) => new DataView(buffer)[`setUint${bits}`](offset, value));
+              pack_funcs.push((value, buffer) => {
+                // DEBUG(`DataView(${hex_parser(buffer)}).setUint${bits}(${offset}, ${value})`);
+                return new DataView(buffer)[`setUint${bits}`](offset, value)
+              });
               break;
           }
           break;
@@ -187,8 +227,16 @@ function parse_admin_report(buffer) {
             case 2:   // Int16
             case 4:   // Int32
               let bits = serialization_length * 8;
-              unpack_funcs.push((buffer) => new DataView(buffer)[`getInt${bits}`](offset));
-              pack_funcs.push((value, buffer) => new DataView(buffer)[`setInt${bits}`](offset, value));
+              // unpack_funcs.push((buffer) => new DataView(buffer)[`getInt${bits}`](offset));
+              unpack_funcs.push((buffer) => {
+                // DEBUG(`DataView(${hex_parser(buffer)}).getInt${bits}(${offset})`);
+                return new DataView(buffer)[`getInt${bits}`](offset)
+              });
+              // pack_funcs.push((value, buffer) => new DataView(buffer)[`setInt${bits}`](offset, value));
+              pack_funcs.push((value, buffer) => {
+                // DEBUG(`DataView(${hex_parser(buffer)}).setInt${bits}(${offset}, ${value})`);
+                return new DataView(buffer)[`setInt${bits}`](offset, value)
+              });
               break;
           }
           break;
@@ -197,8 +245,16 @@ function parse_admin_report(buffer) {
             case 4:   // Float32
             case 8:   // Float64
               let bits = serialization_length * 8;
-              unpack_funcs.push((buffer) => new DataView(buffer)[`getFloat${bits}`](offset));
-              pack_funcs.push((value, buffer) => new DataView(buffer)[`setFloat${bits}`](offset, value));
+              // unpack_funcs.push((buffer) => new DataView(buffer)[`getFloat${bits}`](offset));
+              unpack_funcs.push((buffer) => {
+                // DEBUG(`DataView(${hex_parser(buffer)}).getFloat${bits}(${offset})`);
+                return new DataView(buffer)[`getFloat${bits}`](offset)
+              });
+              // pack_funcs.push((value, buffer) => new DataView(buffer)[`setFloat${bits}`](offset, value));
+              pack_funcs.push((value, buffer) => {
+                // DEBUG(`DataView(${hex_parser(buffer)}).setFloat${bits}(${offset}, ${value})`);
+                return new DataView(buffer)[`setFloat${bits}`](offset, value)
+              });
                break;
           }
           break;
@@ -222,42 +278,46 @@ function parse_admin_report(buffer) {
 
     // Store in `device` object.
 
+    // Create the object if its not there.
+    if (!(report_ID in device.reports)) {
+      device.reports[report_ID] = {};
+    }
+
     // If this report is an input report, only need unpack function
     if (report_types.indexOf(INPUT_REPORT) !== -1) {
-      device[report_ID][INPUT_REPORT] = {name: report_name, unpack: unpack}
+      device.reports[report_ID][INPUT_REPORT] = {name: report_name, unpack: unpack}
     }
     // If this report is an output report, only need pack function
     if (report_types.indexOf(OUTPUT_REPORT) !== -1) {
-      device[report_ID][OUTPUT_REPORT] = {name: report_name, pack: pack}
+      device.reports[report_ID][OUTPUT_REPORT] = {name: report_name, pack: pack}
     }
     // If this report is a feature report, need both pack and unpack functions.
     if (report_types.indexOf(FEATURE_REPORT) !== -1) {
-      device[report_ID][FEATURE_REPORT] = {name: report_name, pack: pack, unpack: unpack}
+      device.reports[report_ID][FEATURE_REPORT] = {name: report_name, pack: pack, unpack: unpack}
     }
 
     // Update the byte offset to the start of the report.
     report_start_byte_offset += report_length;
   }
 
-  return "0x00, 0x0D, 0x01, 0x04, 0x05, 0x61, 0x64, 0x6D, 0x69, 0x6E, 0x01, 0x00, 0x00"
+  return hex_parser(result);
 }
 
 
 function reset_module(removed_device_ID) {
   // Ignore other removed devices.
   if (removed_device_ID === device.device_ID) {
-    // Reset device info.
-    device = DEFAULT_DEVICE;
+    // Reset device object.
+    initialize_device();
     // Clean up after yourself.
     chrome.hid.onDeviceRemoved.removeListener(reset_module);
-    // TODO: Notify user
   }
 }
 
 
 function verify_connection() {
   if (device.connection_ID === null) {
-    throw new DeviceError("No device connected.");
+    throw new DeviceError("No Device Connected.");
   }
 }
 
@@ -265,32 +325,40 @@ function verify_connection() {
 export async function receive() {
   verify_connection();
   let [report_ID, data_buffer] = await chrome.promise.hid.receive(device.connection_ID);
+  // DEBUG(`input ID:${report_ID} ${hex_parser(data_buffer)}`);
+  if (!(report_ID in device.reports)) { return {name: 'unknown', data: null} }
   let {name, unpack} = device.reports[report_ID][INPUT_REPORT];
   return {name: name, data: unpack(data_buffer)};
 }
 
 
-export async function send(report_name, data) {
+export async function send(report_name, ...data) {
   verify_connection();
   let report_ID = device.report_names[OUTPUT_REPORT][report_name];
-  let buffer = device.reports[report_ID][OUTPUT_REPORT].pack(data);
-  return await chrome.promise.hid.send(device.connection_ID, report_ID, buffer);
+  if (typeof report_ID === "undefined") { return null }
+  let data_buffer = device.reports[report_ID][OUTPUT_REPORT].pack(data);
+  // DEBUG(`output ID:${report_ID} ${hex_parser(data_buffer)}`);
+  return await chrome.promise.hid.send(device.connection_ID, report_ID, data_buffer);
 }
 
 
 export async function get_feature(report_name) {
   verify_connection();
   let report_ID = device.report_names[FEATURE_REPORT][report_name];
-  let data = await chrome.promise.hid.receiveFeatureReport(device.connection_ID, report_ID);
-  return device.reports[report_ID][FEATURE_REPORT].unpack(data);
+  if (typeof report_ID === "undefined") { return null }
+  let data_buffer = await chrome.promise.hid.receiveFeatureReport(device.connection_ID, report_ID);
+  // DEBUG(`get feature ID:${report_ID} ${hex_parser(data_buffer)}`);
+  return device.reports[report_ID][FEATURE_REPORT].unpack(data_buffer.slice(1));
 }
 
 
-export async function set_feature(report_name, data) {
+export async function set_feature(report_name, ...data) {
   verify_connection();
   let report_ID = device.report_names[FEATURE_REPORT][report_name];
-  let buffer = device.reports[report_ID][FEATURE_REPORT].pack(data);
-  return await chrome.promise.hid.sendFeatureReport(device.connection_ID, report_ID, buffer);
+  if (typeof report_ID === "undefined") { return null }
+  let data_buffer = device.reports[report_ID][FEATURE_REPORT].pack(data);
+  // DEBUG(`set feature ID:${report_ID} ${hex_parser(data_buffer)}`);
+  return await chrome.promise.hid.sendFeatureReport(device.connection_ID, report_ID, data_buffer);
 }
 
 
@@ -298,13 +366,13 @@ export async function find(device_filter) {
   let devices = await chrome.promise.hid.getDevices(device_filter);
   switch (devices.length) {
     case 0:
-      throw new DeviceError("Device not detected.");
+      throw new DeviceError("Device Not Detected.");
       break;
     case 1:
       return devices[0];
       break;
     default:
-      throw new DeviceError("Multiple devices detected.");
+      throw new DeviceError("Multiple Devices Detected.");
       break;
   }
 }
@@ -320,4 +388,11 @@ export async function initialize(device_ID) {
   // Overloaded function to do initial parsing of HID report and populating de/serialization functions.
   await get_feature('admin');
 
+}
+
+
+export function hex_parser(buffer) {
+  return Array.from(new Uint8Array(buffer))
+    .map((i) => i.toString(16).toUpperCase())
+    .join(" ");
 }
