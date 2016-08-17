@@ -1,3 +1,5 @@
 peggy_bundle.js
 pokey_bundle.js
 *.zip
+peggy_deploy/style_bundle.css
+pokey_deploy/style_bundle.css

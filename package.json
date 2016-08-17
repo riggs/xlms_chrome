@@ -5,8 +5,10 @@
   "main": "background.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build_app": "browserify src/wrapper.js -d -o lib/wrapper.js && browserify src/user_input_window.js -d -o lib/user_input_window.js && browserify src/XLMS.js -d -o lib/XLMS.js",
-    "build_plugins": "browserify orthoboxes_plugins/pokey.js -d -o orthoboxes_plugins/pokey_deploy/pokey_bundle.js && browserify orthoboxes_plugins/peggy.js -d -o orthoboxes_plugins/peggy_deploy/peggy_bundle.js",
+    "build_app": "browserify src/wrapper.js -d -o lib/wrapper.js && browserify src/user_input_window.js -d -o lib/user_input_window.js",
+    "build_pokey": "browserify orthoboxes_plugins/pokey.js -d -o orthoboxes_plugins/pokey_deploy/pokey_bundle.js && cp orthoboxes_plugins/style.css orthoboxes_plugins/pokey_deploy/style_bundle.css",
+    "build_peggy": "browserify orthoboxes_plugins/peggy.js -d -o orthoboxes_plugins/peggy_deploy/peggy_bundle.js && cp orthoboxes_plugins/style.css orthoboxes_plugins/peggy_deploy/style_bundle.css",
+    "build_plugins": "npm run build_pokey && npm run build_peggy",
     "build": "npm run build_app && npm run build_plugins"
   },
   "browserify": {

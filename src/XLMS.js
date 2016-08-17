@@ -62,17 +62,27 @@ export function user_input_with_callback(message, options, callback) {
 }
 
 
-export function register_USB_message_handler(handler) {
+export function register_USB_message_handlers(handlers) {
+  /**
+   * Takes an object with HID message names as keys and function to call for each message as values.
+   */
+  function handle(message) {
+    let {name, data} = message;
+    let func = handlers[name];
+    if (typeof func === "function") {
+      return func(...data);
+    }
+  }
   if (HID_message_port !== null) {
     // Call the handler with all the cached messages.
     while (HID_handler.cache.length) {
-      handler(HID_handler.cache.shift())
+      handle(HID_handler.cache.shift());
     }
     // Once caught up, replace caching message handler.
-    HID_message_port.onmessage = (event) => handler(event.data);
+    HID_message_port.onmessage = (event) => handle(event.data);
   } else {
     // If this function is called before the message port is received, use this handler from the start.
-    HID_handler.func = handler;
+    HID_handler.func = handle;
   }
 }
 

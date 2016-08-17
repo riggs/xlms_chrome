@@ -3,28 +3,29 @@
  */
 'use strict';
 
-import {session_data_promise} from "../lib/XLMS";
-import {Status_Bar, Video_Recorder} from "./common_components";
+import {session_data_promise} from "../src/XLMS";
+import {View_Port, Status_Bar, Video_Recorder, session_data} from "./common_components";
 
-import {Component} from 'react';
+import React, {Component} from 'react';
 import {render} from 'react-dom';
 
 
-class Pokey extends Component {
+class Pokey extends View_Port {
   render() {
     return (
-      <div>
-        <Status_Bar />
-        <Video_Recorder />
+      <div className="flex-container column">
+        <Status_Bar {...this.props.session_data} {...this.state.viewport}/>
+        <Video_Recorder {...this.props.session_data} {...this.state.viewport}/>
       </div>
     );
   }
 }
 
 
-session_data_promise.then(session_data => {
+// session_data_promise.then(session_data => {
   render(
     <Pokey session_data={session_data} />,
     document.getElementById('content')
   );
-});
+// });
+

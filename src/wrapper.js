@@ -24,8 +24,10 @@ async function init() {
 
   // launch_url set just before 'load' event by background.js.
   let endpoint_URL = XLMS_REST.parse_launch_URL(window.launch_url);
+  DEBUG(`endpoint_URL: ${endpoint_URL}`);
 
   let session_data = await XLMS_REST.get_session_data(endpoint_URL);
+  DEBUG(`session_data: ${session_data}`);
 
   // Normalize data for chrome.hid API.
   let device_filter = [];
@@ -68,7 +70,16 @@ async function init() {
   // Initialize plugin.
   const plugin = document.getElementById('plugin');
   // Navigate plugin to content hosted in XLMS.
+  DEBUG(`Setting plugin_URL to localhost`);
+  session_data.plugin_URL = "http://localhost/~riggs/peggy/index.html";
   plugin.src = session_data.plugin_URL;
+
+  plugin.addEventListener('permissionrequest', event => {
+    DEBUG(event);
+    if (event.permission === 'media') {
+      event.request.allow();
+    }
+  });
 
   // Wait for plugin to load and for device connection to initialize.
   await Promise.all([
@@ -141,7 +152,7 @@ async function init() {
 
   // 'configuration' object is an array of objects, with each object having a single key: value pair.
   // This is to ensure the order is consistent.
-  device.set_feature('config', session_data.configuration.map(obj => obj[Object.keys(obj)[0]]));
+  device.set_feature('config', ...session_data.configuration.map(obj => obj[Object.keys(obj)[0]]));
 
   // TODO: Send device timestamp.
   device.send('timestamp', Date.now());
@@ -149,4 +160,6 @@ async function init() {
 }
 
 // window.addEventListener('load', init);
+window.init = init;
 window.device = device;
+window.XLMS = XLMS_REST;

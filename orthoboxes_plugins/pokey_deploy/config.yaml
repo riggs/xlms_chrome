@@ -1,0 +1,57 @@
+--- # Pokey
+interface: index.html
+
+hardware:
+  - vendorID: 1003
+    deviceID: 8256
+
+configuration:
+  - description:  "Hardware Task Timeout"
+    default:      0
+  - description:  "Target 1"
+    default:      0
+  - description:  "Target 2"
+    default:      1
+  - description:  "Target 3"
+    default:      2
+  - description:  "Target 4"
+    default:      3
+  - description:  "Target 5"
+    default:      4
+  - description:  "Target 6"
+    default:      5
+  - description:  "Target 7"
+    default:      6
+  - description:  "Target 8"
+    default:      7
+  - description:  "Target 9"
+    default:      8
+  - description:  "Target 10"
+    default:      9
+
+metrics:
+  elapsed_time:
+    description:    "Time taken to complete the Operation; minimum value is best possible score."
+    values:
+      - unit:      Seconds
+        threshold:  maximum
+        default:    120
+
+      - unit:      Seconds
+        threshold:  minimum
+        default:    60
+
+  error_count:
+    description:    "Number of errors allowed."
+    values:
+      - unit:      Count
+        threshold:  maximum
+        default:    2
+
+  error_length:
+    description:    "Total length of errors allowed."
+    values:
+      - unit:      Total milliseconds
+        threshold:  maximum
+        default:    500
+...

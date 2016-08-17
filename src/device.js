@@ -362,8 +362,8 @@ export async function set_feature(report_name, ...data) {
 }
 
 
-export async function find(device_filter) {
-  let devices = await chrome.promise.hid.getDevices(device_filter);
+export async function find(filters) {
+  let devices = await chrome.promise.hid.getDevices({filters});
   switch (devices.length) {
     case 0:
       throw new DeviceError("Device Not Detected.");
