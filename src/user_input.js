@@ -6,6 +6,8 @@
  */
 'use strict';
 
+// App-wide DEBUG flag.
+import DEBUG from "../src/debug_logger";
 
 export class Window_Closed_Error extends Error {}
 
@@ -13,12 +15,23 @@ export class Window_Closed_Error extends Error {}
 export function get_input(message, option_strings) {
   let pending = true;
   return new Promise((resolve, reject) => {
-    chrome.app.window.create("user_input.html", {id: "user_input", frame: {type: "none"}}, (created_window) => {
+    let floor = Math.floor;
+    let width = floor(window.innerWidth / 5);
+    let height = floor(window.innerHeight / 5);
+    let top = floor((window.innerHeight - height) / 2);
+    let left = floor((window.innerWidth - width) / 2);
+    DEBUG({width, height, top, left});
+    chrome.app.window.create("user_input.html", {
+      id: "user_input",
+      frame: {type: "none"},
+      innerBounds: {width, height, top, left}
+    }, (created_window) => {
       created_window.contentWindow.message = message;
       created_window.contentWindow.option_strings = option_strings;
       created_window.contentWindow.result = (result) => {
         if (pending) {
           pending = false;
+          DEBUG(`resolving with ${result}`);
           resolve(result);
         }
       };

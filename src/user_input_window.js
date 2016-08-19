@@ -6,14 +6,35 @@
 'use strict';
 
 
-// Close user input window if the main window is closed.
-// window.creator.onClosed.addListener(() => chrome.app.window.current().close());
+import React, {Component} from 'react';
+import {render} from 'react-dom';
 
-// TODO: Display shit.
 
-function init() {
-  document.getElementById('message').textContent = window.message;
-
+class Input extends Component {
+  render() {
+    console.log(this.props.options);
+    return (
+      <div className="flex-container column">
+        <div className="flex-item flex-container centered">
+          <h3 className="flex-item centered"> {this.props.message} </h3>
+        </div>
+        <div className="flex-item flex-container row spread">
+          {this.props.options.map(option =>
+            <button key={option} className="flex-item" onClick={() => {
+              setTimeout(() => {chrome.app.window.current().close()}, 0);
+              window.result(option);
+            }}> {option} </button>
+          )}
+        </div>
+      </div>
+    )
+  }
 }
 
-window.addEventListener('load', init);
+
+window.addEventListener('load', () => {
+  render(
+    <Input message={window.message} options={window.option_strings} />,
+    document.getElementById('content')
+  );
+});

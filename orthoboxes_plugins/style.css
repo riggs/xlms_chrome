@@ -19,6 +19,15 @@
     align-content: center;
 }
 
+.spread {
+    justify-content: space-around;
+    align-content: space-around;
+}
+
 #peggy_display {
     flex: 0.33 1 auto;
+}
+
+video {
+    width: 100%;
 }

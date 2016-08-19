@@ -22,7 +22,8 @@
   "permissions": [
     "hid",
     {"usbDevices": [
-        {"vendorId": 1003, "productId": 8256}
+      {"vendorId": 1003, "productId": 8256},
+      {"vendorId": 1003, "productId": 8257}
     ]},
     "http://xlms.org/",
     "http://demo.xlms.advantagelabs.com/",

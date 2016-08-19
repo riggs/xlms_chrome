@@ -4,11 +4,14 @@
 'use strict';
 
 import {session_data_promise} from "../src/XLMS";
-import {View_Port, Status_Bar, Video_Recorder, session_data} from "./common_components";
+import {View_Port, Status_Bar, Video_Recorder, session_data, orthobox} from "./common_components";
 
 import React, {Component} from 'react';
 import {render} from 'react-dom';
+import {autorun} from "mobx";
 
+
+orthobox.set_up = true;
 
 class Pokey extends View_Port {
   render() {
@@ -22,10 +25,11 @@ class Pokey extends View_Port {
 }
 
 
-// session_data_promise.then(session_data => {
+session_data_promise.then(session_data => {
   render(
     <Pokey session_data={session_data} />,
     document.getElementById('content')
   );
-// });
+});
+
 

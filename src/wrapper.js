@@ -27,7 +27,7 @@ async function init() {
   DEBUG(`endpoint_URL: ${endpoint_URL}`);
 
   let session_data = await XLMS_REST.get_session_data(endpoint_URL);
-  DEBUG(`session_data: ${session_data}`);
+  DEBUG(session_data); window.session_data = session_data;
 
   // Normalize data for chrome.hid API.
   let device_filter = [];
@@ -36,6 +36,7 @@ async function init() {
   });
 
   let exit = () => chrome.app.window.current().close();
+  window.exit = exit; // FIXME: DEBUG
 
   // Ensure a compatible device is connected.
   async function connect(filter) {
@@ -69,9 +70,18 @@ async function init() {
 
   // Initialize plugin.
   const plugin = document.getElementById('plugin');
+  let fix_size = () => {
+    plugin.style.height = window.innerHeight + "px";
+    plugin.style.width = window.innerWidth + "px";
+  };
+  fix_size();
+  window.onresize = fix_size;
   // Navigate plugin to content hosted in XLMS.
-  DEBUG(`Setting plugin_URL to localhost`);
-  session_data.plugin_URL = "http://localhost/~riggs/peggy/index.html";
+  let plugin_load = new Promise((resolve, reject) => plugin.addEventListener('loadstop', () => {
+    DEBUG('loadstop');
+    resolve()
+  }));
+  DEBUG(`Setting plugin_URL to localhost`); session_data.plugin_URL = "http://localhost/~riggs/peggy/index.html";
   plugin.src = session_data.plugin_URL;
 
   plugin.addEventListener('permissionrequest', event => {
@@ -83,7 +93,7 @@ async function init() {
 
   // Wait for plugin to load and for device connection to initialize.
   await Promise.all([
-    new Promise((resolve, reject) => plugin.addEventListener('contentLoad', resolve)),
+    plugin_load,
     device.initialize(connected_device.deviceId)
   ]);
 
@@ -126,7 +136,9 @@ async function init() {
   const HID_message_channel = new MessageChannel();
   let HID_poller = async () => {
     try {
-      HID_message_channel.port1.postMessage(await device.receive());
+      let message = await device.receive();
+      DEBUG(message);
+      HID_message_channel.port1.postMessage(message);
       setTimeout(HID_poller, 0);
     } catch (error) {
       if (error instanceof device.DeviceError) {
@@ -159,7 +171,6 @@ async function init() {
 
 }
 
-// window.addEventListener('load', init);
-window.init = init;
+window.addEventListener('load', init);
 window.device = device;
 window.XLMS = XLMS_REST;

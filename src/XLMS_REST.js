@@ -13,7 +13,6 @@ import URI, {decode} from 'urijs';
 
 // Internal imports.
 import {endpoint_query_parameter} from './constants';
-import user_input from './user_input';
 
 
 export function parse_launch_URL(launch_url) {
@@ -29,6 +28,7 @@ export async function get_session_data(URL) {
   // TODO: Error handling, via user_input.
   //   console.log(error);
   // }
+  DEBUG(REST_data);
 
   return {
     user_display_name:      REST_data.name,

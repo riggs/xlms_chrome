@@ -9,6 +9,8 @@
 // App-wide DEBUG flag.
 import DEBUG from "./debug_logger";
 
+import {observer} from "mobx-react";
+
 
 export class Window_Closed_Error extends Error {}
 
@@ -45,6 +47,7 @@ function handle_user_input_response(event) {
 }
 
 
+// FIXME: Return a disposer function which kills the user_input window when called.
 export async function user_input(message, options) {
   let request = {message: message, option_strings: Object.keys(options)};
 
@@ -67,10 +70,17 @@ export function register_USB_message_handlers(handlers) {
    * Takes an object with HID message names as keys and function to call for each message as values.
    */
   function handle(message) {
+    DEBUG(message);
     let {name, data} = message;
     let func = handlers[name];
-    if (typeof func === "function") {
-      return func(...data);
+    switch (typeof func) {
+      case "function":
+        return func(...data);
+      case "undefined":
+        DEBUG(name, ...data);
+        break;
+      default:
+        console.error(`Bad message handler for ${name}.`);
     }
   }
   if (HID_message_port !== null) {
@@ -95,7 +105,6 @@ function admin_message_handler(message) {
 export let session_data_promise = new Promise((resolve, reject) => {
   window.addEventListener('message', (event) => {
     if (event.data.type === "initialization") {
-      DEBUG(event);
       source_window = event.source;
       [user_input_port, HID_message_port, admin_message_port] = event.ports;
       user_input_port.onmessage = handle_user_input_response;

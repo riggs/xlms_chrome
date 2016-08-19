@@ -3,7 +3,7 @@ interface: index.html
 
 hardware:
   - vendorID: 1003
-    deviceID: 8256
+    deviceID: 8257
 
 configuration:
   - description:  "Hardware Task Timeout"
@@ -35,21 +35,21 @@ metrics:
     values:
       - unit:      Seconds
         threshold:  maximum
-        default:    120
+        default:    180
 
       - unit:      Seconds
         threshold:  minimum
         default:    60
 
-  error_count:
-    description:    "Number of errors allowed."
+  wall_error_count:
+    description:    "Number of touch errors allowed."
     values:
       - unit:      Count
         threshold:  maximum
         default:    2
 
-  error_length:
-    description:    "Total length of errors allowed."
+  wall_error_length:
+    description:    "Total length of touch errors allowed."
     values:
       - unit:      Total milliseconds
         threshold:  maximum
