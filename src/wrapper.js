@@ -81,7 +81,7 @@ async function init() {
     DEBUG('loadstop');
     resolve()
   }));
-  DEBUG(`Setting plugin_URL to localhost`); session_data.plugin_URL = "http://localhost/~riggs/peggy/index.html";
+  DEBUG(`Setting plugin_URL to localhost`); session_data.plugin_URL = "http://localhost/~riggs/pokey/index.html";
   plugin.src = session_data.plugin_URL;
 
   plugin.addEventListener('permissionrequest', event => {

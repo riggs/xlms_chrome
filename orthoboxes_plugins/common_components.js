@@ -6,12 +6,13 @@
 // App-wide DEBUG flag.
 import DEBUG from "../src/debug_logger";
 
-import {register_USB_message_handlers, exit, user_input, Window_Closed_Error} from "../src/XLMS";
+import {register_USB_message_handlers, exit, user_input, Window_Closed_Error, send_results} from "../src/XLMS";
+import {session_data_promise} from "../src/XLMS";
 
 import React, {Component} from 'react';
 import {findDOMNode} from 'react-dom';
 import {observer} from "mobx-react";
-import {observable, computed, action} from "mobx";
+import {observable, computed, action, toJS} from "mobx";
 
 
 export let session_data = {}; // FIXME: DEBUG
@@ -27,20 +28,18 @@ export class Orthobox {
     exercise: 'exercise',
     finished: 'finished'
   };
-  timer = null;
+  timer_interval = null;
+  @observable session_data = {};
   @observable set_up = false;
   @observable state = Orthobox.states.waiting;
   @observable tool_state = null;
   // @observable recording = false;
   @observable start_time = null;
   @observable end_time = null;
+  @observable timer = 0;
   @computed get elapsed_time() {
-    if (this.start_time !== null) {
-      if (this.end_time !== null) {
-        return this.end_time - this.start_time;
-      } else {
-        return Date.now() - this.start_time;
-      }
+    if (this.start_time !== null && this.end_time !== null) {
+      return this.end_time - this.start_time;
     } else {
       return null;
     }
@@ -55,13 +54,32 @@ export class Orthobox {
   end_exercise() {
     this.end_time = Date.now();
     this.state = Orthobox.states.finished;
+    clearInterval(this.timer_interval);
+    Object.assign(this.session_data, this.results);
+    // send_results(this.session_data);
+    send_results(this.results);
+    user_input(`You took ${Math.floor(this.results.elapsed_time / 1000)} seconds and made ${this.error_count} errors.`, {Exit: exit}).then(func => func());
   }
   start_exercise() {
     this.start_time = Date.now();
     this.state = Orthobox.states.exercise;
-    // this.timer = setInterval()
+    this.timer_interval = setInterval(() => {this.timer += 1}, 1000);
+  }
+  @computed get results() {
+    let results = {};
+    let {maximum, minimum} = this.session_data.metrics.elapsed_time;
+    if (this.error_count > this.session_data.metrics.wall_error_count.maximum) {
+      results.success = 0;
+    } else {
+      results.success = Math.max(0, Math.min(1, 1 - (1 - 0.6) * (Math.floor(this.elapsed_time / 1000) - minimum) / (maximum - minimum)));
+    }
+    results.start_time = this.start_time;
+    results.elapsed_time = this.elapsed_time;
+    results.results = {wall_errors: toJS(this.wall_errors), drop_errors: toJS(this.drop_errors)};
+    return results;
   }
 }
+
 
 export let orthobox = new Orthobox();
 window.orthobox = orthobox; // FIXME: DEBUG
@@ -94,7 +112,7 @@ export function save_raw_event(wrapped, name) {
 HID_message_handlers.wall_error = action(save_raw_event((timestamp, duration) => {
   // let timestamp = simplify_timestamp(timestamp);
   if (orthobox.state === Orthobox.states.exercise) {
-    orthobox.wall_errors.push({wall_error: {timestamp, duration}});
+    orthobox.wall_errors.push({timestamp, duration});
   }
 }, 'wall_error'));
 
@@ -102,7 +120,7 @@ HID_message_handlers.wall_error = action(save_raw_event((timestamp, duration) =>
 HID_message_handlers.drop_error = action(save_raw_event((timestamp, duration) => {
   // let timestamp = simplify_timestamp(timestamp);
   if (orthobox.state === Orthobox.states.exercise) {
-    orthobox.drop_errors.push({drop_error: {timestamp, duration}});
+    orthobox.drop_errors.push({timestamp});
   }
 }, 'drop_error'));
 
@@ -134,6 +152,10 @@ HID_message_handlers.status = action(save_raw_event(async (timestamp, serial_num
         exit();
       }
     }
+  }
+
+  if (orthobox.set_up && orthobox.tool_state === 'in') {
+    orthobox.state = Orthobox.states.ready;
   }
 
 }, 'status'));
@@ -177,6 +199,9 @@ HID_message_handlers.tool = action(save_raw_event((timestamp, state) => {
 HID_message_handlers.poke = action(save_raw_event((timestamp, location) => {
   if (orthobox.state === Orthobox.states.exercise) {
     orthobox.pokes.push({poke: {timestamp, location}});
+    if (orthobox.pokes.length >= 10) {
+      orthobox.end_exercise();
+    }
   }
 }, 'poke'));
 
@@ -211,7 +236,7 @@ export class Status_Bar extends Component {
     switch (orthobox.state) {
       case Orthobox.states.exercise:
       case Orthobox.states.finished:
-        timer = `Elapsed Time: ${orthobox.elapsed_time ? orthobox.elapsed_time : ''}`;
+        timer = `Elapsed Time: ${orthobox.timer}`;
         error_count = `Errors: ${orthobox.error_count}`;
         break;
       case Orthobox.states.ready:
@@ -297,4 +322,8 @@ export class Video_Recorder extends Component {
   }
 }
 
+
+session_data_promise.then(session_data => {
+  Object.assign(orthobox.session_data, session_data);
+});
 

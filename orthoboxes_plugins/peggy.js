@@ -6,7 +6,6 @@
 // App-wide DEBUG flag.
 import DEBUG from "../src/debug_logger";
 
-import {session_data_promise} from "../src/XLMS";
 import {View_Port, Status_Bar, Video_Recorder, session_data, HID_message_handlers, orthobox, save_raw_event, Orthobox} from "./common_components";
 
 import React, {Component} from 'react';
@@ -115,9 +114,7 @@ class Peggy extends View_Port {
 }
 
 
-session_data_promise.then(session_data => {
-  render(
-    <Peggy session_data={session_data} />,
-    document.getElementById('content')
-  );
-});
+render(
+  <Peggy session_data={session_data}/>,
+  document.getElementById('content')
+);

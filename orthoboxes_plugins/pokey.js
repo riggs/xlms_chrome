@@ -8,10 +8,12 @@ import {View_Port, Status_Bar, Video_Recorder, session_data, orthobox} from "./c
 
 import React, {Component} from 'react';
 import {render} from 'react-dom';
-import {autorun} from "mobx";
 
+// App-wide DEBUG flag.
+import DEBUG from "../src/debug_logger";
 
 orthobox.set_up = true;
+DEBUG(orthobox);
 
 class Pokey extends View_Port {
   render() {
