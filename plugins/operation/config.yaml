@@ -6,8 +6,7 @@ hardware:
     deviceID: 8256
 
 configuration:
-  timeout:
-    description:  "Time allowed to complete the Operation."
+  - description:  "Time allowed to complete the Operation."
     default:      0
 
 metrics:
@@ -35,3 +34,4 @@ metrics:
       - unit:      Total milliseconds
         threshold:  maximum
         default:    500
+...
