@@ -36,7 +36,7 @@
     "partitions": [
       {
         "name": "plugin",
-        "accessible_resources": ["lib/video.js", "lib/XLMS.js"]
+        "accessible_resources": ["style.css"]
       }
     ]
   }

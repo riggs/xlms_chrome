@@ -21,7 +21,7 @@ chrome.app.runtime.onLaunched.addListener((launch_data) => {
     // TODO: Figure out bounds
     chrome.app.window.create("user_input.html", {id: "Launch_error"}, (error_window) => {
       error_window.contentWindow.message = "App much be launched from XLMS.";
-      error_window.contentWindow.option_strings = ["Quit"];
+      error_window.contentWindow.option_strings = ["Quit", "one", "two"];
       error_window.contentWindow.result = () => {
         error_window.close()
       };

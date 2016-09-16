@@ -1,0 +1,40 @@
+{
+  "id": "128",
+  "exercise": "Object Manipulation Exercise",
+  "course": "Basic Arthroscopic Skills Validation Study",
+  "result_id": "82",
+  "trainer_id": null,
+  "session_data": null,
+  "start_time": null,
+  "elapsed_time": null,
+  "success": "0",
+  "closed": "0",
+  "kurento_url": "kurentoserver",
+  "kurento_video_directory": "videodirectory",
+  "name": null,
+  "interface": "http://demo.xlms.advantagelabs.com/sites/demo.xlms.advantagelabs.com/files/devices/peggy_abos_fixed/assets/index.html",
+  "hardware": [
+    {
+      "vendorID": 1003,
+      "deviceID": 8256
+    }
+  ],
+  "metrics": {
+    "elapsed_time": {
+      "maximum": "240",
+      "minimum": "120"
+    },
+    "wall_error_count": {
+      "maximum": "2"
+    },
+    "wall_error_length": {
+      "maximum": "500"
+    },
+    "drop_error_count": {
+      "maximum": "0"
+    }
+  },
+  "configuration": [
+    "0"
+  ]
+}

@@ -22,7 +22,7 @@ import * as device from './device';
 
 async function init() {
 
-  // launch_url set just before 'load' event by background.js.
+  // window.launch_url set just before 'load' event by background.js.
   let endpoint_URL = XLMS_REST.parse_launch_URL(window.launch_url);
   DEBUG(`endpoint_URL: ${endpoint_URL}`);
 
@@ -70,20 +70,25 @@ async function init() {
 
   // Initialize plugin.
   const plugin = document.getElementById('plugin');
-  let fix_size = () => {
+  let set_plugin_size = () => {
     plugin.style.height = window.innerHeight + "px";
     plugin.style.width = window.innerWidth + "px";
   };
-  fix_size();
-  window.onresize = fix_size;
-  // Navigate plugin to content hosted in XLMS.
+  set_plugin_size();
+  window.onresize = set_plugin_size;
+
+  // Create Promise that resolves when plugin finishes loading.
   let plugin_load = new Promise((resolve, reject) => plugin.addEventListener('loadstop', () => {
     DEBUG('loadstop');
     resolve()
   }));
-  DEBUG(`Setting plugin_URL to localhost`); session_data.plugin_URL = "http://localhost/~riggs/pokey/index.html";
+
+  // Navigate plugin to content hosted in XLMS.
+  // TODO: Dev setting causes window prompt for location to load plugin from.
+  // DEBUG(`Setting plugin_URL to localhost`); session_data.plugin_URL = "http://localhost/~riggs/pokey/index.html";
   plugin.src = session_data.plugin_URL;
 
+  // Explicitly allow getUserMedia access from the plugin.
   plugin.addEventListener('permissionrequest', event => {
     DEBUG(event);
     if (event.permission === 'media') {

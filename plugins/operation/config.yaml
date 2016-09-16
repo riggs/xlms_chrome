@@ -1,0 +1,37 @@
+--- # Operation
+interface: index.html
+
+hardware:
+  - vendorID: 1003
+    deviceID: 8256
+
+configuration:
+  timeout:
+    description:  "Time allowed to complete the Operation."
+    default:      0
+
+metrics:
+  elapsed_time:
+    description:    "Time taken to complete the Operation; minimum value is best possible score."
+    values:
+      - unit:      Seconds
+        threshold:  maximum
+        default:    24
+
+      - unit:      Seconds
+        threshold:  minimum
+        default:    4
+
+  error_count:
+    description:    "Number of errors allowed."
+    values:
+      - unit:      Count
+        threshold:  maximum
+        default:    2
+
+  error_length:
+    description:    "Total length of errors allowed."
+    values:
+      - unit:      Total milliseconds
+        threshold:  maximum
+        default:    500

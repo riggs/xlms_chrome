@@ -31,7 +31,7 @@ export async function get_session_data(URL) {
   DEBUG(REST_data);
 
   return {
-    user_display_name:      REST_data.name,
+    // user_display_name:      REST_data.name,
     exercise_name:          REST_data.exercise,
     course_name:            REST_data.course,
     video_configuration: {

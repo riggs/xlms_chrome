@@ -6,8 +6,8 @@
 // App-wide DEBUG flag.
 import DEBUG from "../src/debug_logger";
 
-import {register_USB_message_handlers, exit, user_input, Window_Closed_Error, send_results} from "../src/XLMS";
-import {session_data_promise} from "../src/XLMS";
+import {View_Port} from "../src/UI_utils";
+import {session_data_promise, register_USB_message_handlers, exit, user_input, Window_Closed_Error, send_results} from "../src/XLMS";
 
 import React, {Component} from 'react';
 import {findDOMNode} from 'react-dom';
@@ -21,7 +21,7 @@ export let HID_message_handlers = {};
 window.HID_message_handlers = HID_message_handlers;  // FIXME: DEBUG
 
 
-export class Orthobox {
+class Orthobox_State {
   static states = {
     waiting: 'waiting',
     ready: 'ready',
@@ -58,7 +58,7 @@ export class Orthobox {
     Object.assign(this.session_data, this.results);
     // send_results(this.session_data);
     send_results(this.results);
-    user_input(`You took ${Math.floor(this.results.elapsed_time / 1000)} seconds and made ${this.error_count} errors.`, {Exit: exit}).then(func => func());
+    user_input(`You took ${Math.floor(this.results.elapsed_time / 1000)} seconds and made ${this.error_count} errors.`, {Exit: exit});
   }
   start_exercise() {
     this.start_time = Date.now();
@@ -81,8 +81,8 @@ export class Orthobox {
 }
 
 
-export let orthobox = new Orthobox();
-window.orthobox = orthobox; // FIXME: DEBUG
+export let orthobox_state = new Orthobox_State();
+window.orthobox = orthobox_state; // FIXME: DEBUG
 
 
 function simplify_timestamp(timestamp) {
@@ -103,7 +103,7 @@ let TOOL_STATES = {
 export function save_raw_event(wrapped, name) {
   return function (...args) {
     DEBUG(`orthobox.raw_events.push({${name}: [${args}]});`);
-    orthobox.raw_events.push({[name]: {...args}});
+    orthobox_state.raw_events.push({[name]: {...args}});
     return wrapped(...args);
   };
 }
@@ -111,16 +111,16 @@ export function save_raw_event(wrapped, name) {
 
 HID_message_handlers.wall_error = action(save_raw_event((timestamp, duration) => {
   // let timestamp = simplify_timestamp(timestamp);
-  if (orthobox.state === Orthobox.states.exercise) {
-    orthobox.wall_errors.push({timestamp, duration});
+  if (orthobox_state.state === Orthobox.states.exercise) {
+    orthobox_state.wall_errors.push({timestamp, duration});
   }
 }, 'wall_error'));
 
 
 HID_message_handlers.drop_error = action(save_raw_event((timestamp, duration) => {
   // let timestamp = simplify_timestamp(timestamp);
-  if (orthobox.state === Orthobox.states.exercise) {
-    orthobox.drop_errors.push({timestamp});
+  if (orthobox_state.state === Orthobox.states.exercise) {
+    orthobox_state.drop_errors.push({timestamp});
   }
 }, 'drop_error'));
 
@@ -133,7 +133,7 @@ HID_message_handlers.status = action(save_raw_event(async (timestamp, serial_num
   // If tool soldered incorrectly.
   if (byte1 & 1) {
     try {
-      (await user_input("Device Manufactured Incorrectly", {Quit: exit}))()
+      await user_input("Device Manufactured Incorrectly", {Quit: exit})
     } catch (error) {
       if (error instanceof Window_Closed_Error) {
         exit();
@@ -142,11 +142,11 @@ HID_message_handlers.status = action(save_raw_event(async (timestamp, serial_num
   }
 
   // Set tool state based on bits 2 & 3 in 1st byte.
-  orthobox.tool_state = TOOL_STATES[(byte1 >> 1) & 0b11];
+  orthobox_state.tool_state = TOOL_STATES[(byte1 >> 1) & 0b11];
 
-  while (orthobox.tool_state === 'unplugged') {
+  while (orthobox_state.tool_state === 'unplugged') {
     try {
-      (await user_input("Tool Not Connected", {Retry: () => {}, Quit: exit}))()
+      await user_input("Tool Not Connected", {Retry: () => {}, Quit: exit})
     } catch (error) {
       if (error instanceof Window_Closed_Error) {
         exit();
@@ -154,41 +154,41 @@ HID_message_handlers.status = action(save_raw_event(async (timestamp, serial_num
     }
   }
 
-  if (orthobox.set_up && orthobox.tool_state === 'in') {
-    orthobox.state = Orthobox.states.ready;
+  if (orthobox_state.set_up && orthobox_state.tool_state === 'in') {
+    orthobox_state.state = Orthobox.states.ready;
   }
 
 }, 'status'));
 
 
 HID_message_handlers.tool = action(save_raw_event((timestamp, state) => {
-  orthobox.tool_state = TOOL_STATES[state];
+  orthobox_state.tool_state = TOOL_STATES[state];
   switch (state) {
     case 0:   // Out
-      switch (orthobox.state) {
+      switch (orthobox_state.state) {
         case Orthobox.states.ready:
-          if (orthobox.set_up) {
-            orthobox.start_exercise();
+          if (orthobox_state.set_up) {
+            orthobox_state.start_exercise();
           }
           break;
       }
       break;
     case 1:   // In
-      switch (orthobox.state) {
+      switch (orthobox_state.state) {
         case Orthobox.states.waiting:
-          if (orthobox.set_up) {
-            orthobox.state = Orthobox.states.ready;
+          if (orthobox_state.set_up) {
+            orthobox_state.state = Orthobox.states.ready;
           }
           break;
       }
       break;
     case 2:
-      switch (orthobox.state) {
+      switch (orthobox_state.state) {
         case Orthobox.states.ready:
-          orthobox.state = Orthobox.states.waiting;
+          orthobox_state.state = Orthobox.states.waiting;
           break;
         case Orthobox.states.exercise:
-          (user_input("Error: Tool Disconnected. Aborting Exercise", {Quit: exit}).then(func => func()));
+          user_input("Error: Tool Disconnected. Aborting Exercise", {Quit: exit});
           break;
       }
       break;
@@ -197,33 +197,18 @@ HID_message_handlers.tool = action(save_raw_event((timestamp, state) => {
 
 
 HID_message_handlers.poke = action(save_raw_event((timestamp, location) => {
-  if (orthobox.state === Orthobox.states.exercise) {
-    orthobox.pokes.push({poke: {timestamp, location}});
-    if (orthobox.pokes.length >= 10) {
-      orthobox.end_exercise();
+  if (orthobox_state.state === Orthobox.states.exercise) {
+    orthobox_state.pokes.push({poke: {timestamp, location}});
+    if (orthobox_state.pokes.length >= 10) {
+      orthobox_state.end_exercise();
     }
   }
 }, 'poke'));
 
 
-export class View_Port extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {viewport: {window_width: window.innerWidth, window_height: window.innerHeight}};
-    this.handle_resize = this.handle_resize.bind(this);
-  }
-
-  handle_resize() {
-    this.setState({viewport: {window_width: window.innerWidth, window_height: window.innerHeight}});
-  }
-
+export class Orthobox extends View_Port {
   componentDidMount() {
-    window.addEventListener('resize', this.handle_resize);
     register_USB_message_handlers(HID_message_handlers);
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.handle_resize);
   }
 }
 
@@ -233,36 +218,36 @@ export class Status_Bar extends Component {
   render() {
     let timer = null;
     let error_count = null;
-    switch (orthobox.state) {
+    switch (orthobox_state.state) {
       case Orthobox.states.exercise:
       case Orthobox.states.finished:
-        timer = `Elapsed Time: ${orthobox.timer}`;
-        error_count = `Errors: ${orthobox.error_count}`;
+        timer = `Elapsed Time: ${orthobox_state.timer}`;
+        error_count = `Errors: ${orthobox_state.error_count}`;
         break;
       case Orthobox.states.ready:
         timer = `Elapsed Time: 0`;
         error_count = `Errors: 0`;
     }
     return (
-      <div id="status_bar" className="flex-item flex-container row">
+      <div id="status_bar" className="flex-grow flex-container row">
         {/*<h2 id="student_name"> {this.props.user_display_name} </h2>*/}
         {/*<div className="flex-item">*/}
           {/*<h2 id="student_name"> user_display_name </h2>*/}
         {/*</div>*/}
-        <div className="flex-item flex-container column">
-          <div className="flex-item">
+        <div className="flex-grow flex-container column">
+          <div className="flex-grow">
             <h3 id="course_name"> {this.props.course_name} </h3>
             {/*<h3 id="course_name"> course_name </h3>*/}
           </div>
-          <div className="flex-item">
+          <div className="flex-grow">
             <h3 id="exercise_name"> {this.props.exercise_name} </h3>
             {/*<h3 id="exercise_name"> exercise_name </h3>*/}
           </div>
         </div>
-        <div className="flex-item">
+        <div className="flex-grow">
           <h2 id="timer"> {timer} </h2>
         </div>
-        <div className="flex-item">
+        <div className="flex-grow">
           <h3 id="error_count"> {error_count} </h3>
         </div>
       </div>
@@ -314,7 +299,7 @@ class Video_Display extends Component {
 export class Video_Recorder extends Component {
   render() {
     return(
-      <div className="column flex-item">
+      <div className="column flex-grow">
         <Video_Display />
         {/*<button id="record" onClick={action(() => orthobox.recording = !orthobox.recording)}> {orthobox.recording ? 'Stop' : 'Start'} Recording </button>*/}
       </div>
@@ -324,6 +309,6 @@ export class Video_Recorder extends Component {
 
 
 session_data_promise.then(session_data => {
-  Object.assign(orthobox.session_data, session_data);
+  Object.assign(orthobox_state.session_data, session_data);
 });
 

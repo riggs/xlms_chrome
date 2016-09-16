@@ -1,5 +1,10 @@
-.flex-item {
+body {
+    font-family: 'Source Sans Pro', sans-serif;
+}
+
+.flex-grow {
     flex: 1 1 auto;
+    text-align: center;
 }
 
 .flex-container {
@@ -30,4 +35,8 @@
 
 video {
     width: 100%;
+}
+
+button {
+    flex: 0 1 auto;
 }

@@ -5,22 +5,23 @@
  */
 'use strict';
 
+import {View_Port} from "../src/UI_utils";
 
-import React, {Component} from 'react';
+import React from 'react';
 import {render} from 'react-dom';
 
 
-class Input extends Component {
+class Input extends View_Port {
   render() {
     console.log(this.props.options);
     return (
       <div className="flex-container column">
-        <div className="flex-item flex-container centered">
-          <h3 className="flex-item centered"> {this.props.message} </h3>
+        <div className="flex-grow flex-container centered">
+          <h3 className="flex-grow centered"> {this.props.message} </h3>
         </div>
-        <div className="flex-item flex-container row spread">
+        <div className="flex-grow flex-container row spread">
           {this.props.options.map(option =>
-            <button key={option} className="flex-item" onClick={() => {
+            <button key={option} className="" onClick={() => {
               setTimeout(() => {chrome.app.window.current().close()}, 0);
               window.result(option);
             }}> {option} </button>

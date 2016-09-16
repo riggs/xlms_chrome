@@ -9,8 +9,6 @@
 // App-wide DEBUG flag.
 import DEBUG from "./debug_logger";
 
-import {observer} from "mobx-react";
-
 
 export class Window_Closed_Error extends Error {}
 
@@ -48,6 +46,13 @@ function handle_user_input_response(event) {
 
 
 // FIXME: Return a disposer function which kills the user_input window when called.
+/**
+ * Create a window for displaying messages to the user and prompting them for a response.
+ *
+ * @param {string} message - Message to display to the user.
+ * @param {Object} options - User responses: Property names are button text, property values are callbacks called when corresponding button is clicked.
+ * @returns {*} - value given in options when corresponding button is selected by user.
+ */
 export async function user_input(message, options) {
   let request = {message: message, option_strings: Object.keys(options)};
 
@@ -55,7 +60,7 @@ export async function user_input(message, options) {
   if (result === null) {
     throw new Window_Closed_Error();
   } else {
-    return options[result];
+    return options[result]();
   }
 }
 
@@ -65,10 +70,10 @@ export function user_input_with_callback(message, options, callback) {
 }
 
 
+/**
+ * Takes an object with HID message names as keys and function to call for each message as values.
+ */
 export function register_USB_message_handlers(handlers) {
-  /**
-   * Takes an object with HID message names as keys and function to call for each message as values.
-   */
   function handle(message) {
     DEBUG(message);
     let {name, data} = message;
