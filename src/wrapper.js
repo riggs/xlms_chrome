@@ -85,7 +85,7 @@ async function init() {
 
   // Navigate plugin to content hosted in XLMS.
   // TODO: Dev setting causes window prompt for location to load plugin from.
-  // DEBUG(`Setting plugin_URL to localhost`); session_data.plugin_URL = "http://localhost/~riggs/pokey/index.html";
+  // DEBUG(`Setting plugin_URL to localhost`); session_data.plugin_URL = "http://localhost/~riggs/operation/index.html";
   plugin.src = session_data.plugin_URL;
 
   // Explicitly allow getUserMedia access from the plugin.

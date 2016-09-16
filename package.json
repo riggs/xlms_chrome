@@ -16,7 +16,7 @@
     "build_plugins": "npm run build_pokey && npm run build_peggy && npm run build_operation",
     "zip_plugins": "npm run zip_pokey && npm run zip_peggy && npm run zip_operation",
     "build": "npm run build_app && npm run build_plugins",
-    "zip": "npm run zip_app && npm run zip_plugins",
+    "zip": "npm run zip_app && npm run zip_plugins"
   },
   "browserify": {
     "transform": [
