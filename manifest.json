@@ -13,7 +13,7 @@
   "url_handlers": {
     "launch_exercise": {
       "matches": [
-        "http://xlms.org/exercise*",
+        "https://demo.xlms.org/exercise*",
         "http://demo.xlms.advantagelabs.com/exercise*"
       ],
       "title": "Launch Exercise"
@@ -25,7 +25,7 @@
       {"vendorId": 1003, "productId": 8256},
       {"vendorId": 1003, "productId": 8257}
     ]},
-    "http://xlms.org/",
+    "https://demo.xlms.org/",
     "http://demo.xlms.advantagelabs.com/",
     "power",
     "audioCapture",

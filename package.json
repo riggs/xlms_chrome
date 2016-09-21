@@ -12,7 +12,7 @@
     "build_peggy": "browserify plugins/peggy/peggy.js -d -o plugins/peggy/peggy_bundle.js",
     "zip_peggy": "npm run build_peggy && pushd plugins/peggy && zip -r peggy.zip index.html config.yaml peggy_bundle.js && popd",
     "build_operation": "browserify plugins/operation/operation.js -d -o plugins/operation/operation_bundle.js",
-    "zip_operation": "npm run build_operation && pushd plugins/operation && zip -r operation.zip index.html config.yaml operation_bundle.js operation_operation_operation.jpg && popd",
+    "zip_operation": "npm run build_operation && pushd plugins/operation && zip -r operation.zip index.html config.yaml operation_bundle.js style.css operation_operation_operation.jpg && popd",
     "build_plugins": "npm run build_pokey && npm run build_peggy && npm run build_operation",
     "zip_plugins": "npm run zip_pokey && npm run zip_peggy && npm run zip_operation",
     "build": "npm run build_app && npm run build_plugins",

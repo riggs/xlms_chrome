@@ -19,14 +19,14 @@ metrics:
 
       - unit:      Seconds
         threshold:  minimum
-        default:    4
+        default:    8
 
   error_count:
     description:    "Number of errors allowed."
     values:
       - unit:      Count
         threshold:  maximum
-        default:    2
+        default:    6
 
   error_length:
     description:    "Total length of errors allowed."

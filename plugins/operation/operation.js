@@ -25,7 +25,7 @@ let session = {
 };
 window.session = session;
 
-let TIMER = {elapsed: 0, id: null, element: null};
+let TIMER = {elapsed: 0, id: -1, element: null};
 
 function color(r, g, b, a = 1) {
   let obj = {r: r, g: g, b: b, a: a};
@@ -37,12 +37,13 @@ function color(r, g, b, a = 1) {
   return obj;
 }
 
-const GREEN = color(0, 0x80, 0);
-const BLUE = color(0x00, 0x44, 0xFF);
-const RED = color(0xFF, 0, 0);
+const GREEN = color(0, 190, 0);
+const BLUE = color(40, 111, 255);
+const RED = color(255, 0, 0);
 const BLACK = color(0, 0, 0);
 
 
+let clear_error = () => {};
 let Display = {
   canvas: null,
   context: null,
@@ -87,47 +88,57 @@ let Display = {
     Display.context.fill(shape.path);
     Display.context.globalCompositeOperation = old_composite;
   },
-  flash: (shape) => {
-    Display.draw(shape);
-    let decay = 0.98;
+  flash: (shape, decay) => {
+    let alpha = 1;
 
     function fade() {
-      Display.fader(shape, decay);
-      decay -= 0.0014
+      Display.fader(shape, alpha);
+      alpha -= decay
     }
 
+    Display.draw(shape);
+    let still_alive = true;
+
     let interval_ID = setInterval(fade, 100);
-    //setTimeout(() => { decay -= 0.05 }, 2000);
-    //setTimeout(() => { decay -= 0.05 }, 4000);
-    setTimeout(() => {
+    let timeout_ID = setTimeout(() => {
       clearInterval(interval_ID);
       Display.erase(shape);
-    }, 6000);
+      still_alive = false;
+    }, 4000);
+    function clear() {
+      if (still_alive) {
+        clearInterval(interval_ID);
+        clearTimeout(timeout_ID);
+        still_alive = false;
+      }
+    }
+    return clear;
   },
-  smiley: () => {
-    let circle = Display.circle(285, 154, 30, BLUE);
-    Display.flash(circle);
-    return circle;
-  },
-  toilet: () => {
-    let circle = Display.circle(386, 256, 30, BLUE);
-    Display.flash(circle);
-    return circle;
-  },
-  skull: () => {
-    let circle = Display.circle(537, 350, 30, BLUE);
-    Display.flash(circle);
-    return circle;
-  },
-  dog: () => {
-    let circle = Display.circle(696, 144, 30, BLUE);
-    Display.flash(circle);
-    return circle;
-  },
-  error: () => {
-
+  error: (decay=0.015) => {
+    clear_error();
+    let circle = Display.circle(240, 352, 100, RED);
+    clear_error = Display.flash(circle, decay);
   }
 };
+window.Display = Display; // FIXME: DEBUG
+
+class Target {
+  constructor(x, y, color=BLUE) {
+    this.circle = Display.circle(x, y, 30, color);
+  }
+  draw() {
+    Display.draw(this.circle);
+  }
+  erase() {
+    Display.erase(this.circle);
+  }
+}
+
+Display.smiley = new Target(436, 530);
+Display.toilet = new Target(606, 258);
+Display.skull = new Target(838, 70);
+Display.dog = new Target(1100, 540);
+Display.start = new Target(138, 562, GREEN);
 
 
 function evaluate() {
@@ -154,6 +165,11 @@ function evaluate() {
 
 async function end() {
 
+  Display.smiley.erase();
+  Display.toilet.erase();
+  Display.skull.erase();
+  Display.dog.erase();
+
   clearInterval(TIMER.id);
 
   let score = evaluate();
@@ -172,7 +188,7 @@ async function end() {
   send_results(results);
 
   try {
-    await user_input(`You took ${Math.floor(results.elapsed_time / 1000)} seconds and made ${session.log.errors.length} errors.`, {Exit: exit});
+    await user_input(`You took ${Math.floor(results.elapsed_time / 1000)} seconds and made ${session.log.errors.length} errors.\nYou scored ${score*100}%`, {Exit: exit});
   } catch (error) {
     if (error instanceof Window_Closed_Error) {
       exit();
@@ -192,36 +208,44 @@ HID_message_handlers.events = (timestamp, event) => {
           TIMER.element.textContent = `Elapsed Time: ${elapsed}`;
         }
       }, 50);
+      Display.start.erase();
+      Display.smiley.draw();
       break;
-    case -1:  // Victory!
+    case 255:  // Victory!
       session.log.end = Date.now();
       end();
       break;
-    case -2:  // Failure :-(
+    case 254:  // Failure :-(
       session.log.end = Date.now();
       end();
       break;
     case 1:   // Smiley removed
-      session.log.smiley = message.data.value[0];
-      Display.smiley();
+      session.log.smiley = timestamp;
+      Display.smiley.erase();
+      Display.toilet.draw();
       break;
     case 2:   // Toilet removed
-      session.log.toilet = message.data.value[0];
-      Display.toilet();
+      session.log.toilet = timestamp;
+      Display.toilet.erase();
+      Display.skull.draw();
       break;
     case 3:   // Skull removed
-      session.log.skull = message.data.value[0];
-      Display.skull();
+      session.log.skull = timestamp;
+      Display.skull.erase();
+      Display.dog.draw();
       break;
     case 4:   // Dog removed
-      session.log.dog = message.data.value[0];
-      Display.dog();
+      session.log.dog = timestamp;
+      Display.dog.erase();
       break;
+    case 42:  // Ready to start
+      Display.start.draw();
   }
 };
 
 
 HID_message_handlers.error = (timestamp, duration) => {
+  Display.error();
   session.log.errors.push({timestamp, duration});
   document.getElementById('error_count').textContent = `Errors: ${session.log.errors.length}`;
 };
@@ -231,7 +255,7 @@ window.addEventListener('load', () => {
 
   register_USB_message_handlers(HID_message_handlers);
 
-  Display.initialize(document.getElementById('display'));
+  Display.initialize(document.getElementById('operation_display'));
 
   session_data_promise.then(session_data => {
     session.id = session_data.session_ID;
@@ -280,5 +304,3 @@ window.addEventListener('load', () => {
   })
 
 });
-
-window.Display = Display;
