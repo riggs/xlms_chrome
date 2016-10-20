@@ -33,6 +33,12 @@ function no_op() {
   DEBUG("no_op");
 }
 
+function on_error(message) {
+  if (message) {
+    console.error(message)
+  }
+}
+
 class Orthobox {
   timer_interval = null;
   @observable session_data = {};
@@ -283,9 +289,7 @@ class Video_Display extends Component {
         this.streams.push(mediaStream);
         this.setState({src: window.URL.createObjectURL(mediaStream)});
       })
-      .catch(error => {
-        console.log(error);
-      });
+      .catch(on_error);
     this.props.set_video_player && this.props.set_video_player(findDOMNode(this));
   }
   componentWillUnmount() {
@@ -364,11 +368,11 @@ export class Video_Recorder extends Component {
     webRTC_peer.on('icecandidate', (candidate) => {
       DEBUG("Local candidate:", candidate);
       candidate = kurentoClient.getComplexType('IceCandidate')(candidate);
-      webRTC.addIceCandidate(candidate, (error) => {if (error) console.log(error)});
+      webRTC.addIceCandidate(candidate, on_error);
     });
     webRTC.on('OnIceCandidate', (event) => {
       DEBUG("Remote candidate:", event.candidate);
-      webRTC_peer.addIceCandidate(event.candidate, (error) => {if (error) console.log(error)});
+      webRTC_peer.addIceCandidate(event.candidate, on_error);
     });
 
     let answer = await new Promise((resolve, reject) => {
@@ -376,7 +380,7 @@ export class Video_Recorder extends Component {
         if (error) { reject(error) } else { resolve(_) }
       })
     });
-    webRTC.gatherCandidates((error) => {if (error) console.log(error)});
+    webRTC.gatherCandidates(on_error);
     webRTC_peer.processAnswer(answer);
 
     await new Promise((resolve, reject) => {
