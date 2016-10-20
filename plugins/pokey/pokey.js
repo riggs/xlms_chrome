@@ -3,7 +3,7 @@
  */
 'use strict';
 
-import {Status_Bar, Video_Recorder, session_data, orthobox_state, Orthobox} from "../orthobox_components";
+import {Status_Bar, Video_Recorder, session_data, orthobox, Orthobox_Component} from "../orthobox_components";
 
 import React from 'react';
 import {render} from 'react-dom';
@@ -11,10 +11,10 @@ import {render} from 'react-dom';
 // App-wide DEBUG flag.
 import DEBUG from "../../src/debug_logger";
 
-orthobox_state.set_up = true;
-DEBUG(orthobox_state);
+orthobox.set_up = true;
+DEBUG(orthobox);
 
-class Pokey extends Orthobox {
+class Pokey extends Orthobox_Component {
   render() {
     return (
       <div className="flex-container column">

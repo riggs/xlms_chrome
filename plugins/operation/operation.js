@@ -188,7 +188,7 @@ async function end() {
   send_results(results);
 
   try {
-    await user_input(`You took ${Math.floor(results.elapsed_time / 1000)} seconds and made ${session.log.errors.length} errors.\nYou scored ${score*100}%`, {Exit: exit});
+    await user_input(`You took ${Math.floor(results.elapsed_time / 1000)} seconds and made ${session.log.errors.length} errors. You scored ${score*100}%`, {Exit: exit});
   } catch (error) {
     if (error instanceof Window_Closed_Error) {
       exit();

@@ -6,7 +6,10 @@
 // App-wide DEBUG flag.
 import DEBUG from "../../src/debug_logger";
 
-import {Status_Bar, Video_Recorder, session_data, HID_message_handlers, orthobox_state, save_raw_event, Orthobox} from "../orthobox_components";
+import {
+  Status_Bar, Video_Recorder, HID_message_handlers, orthobox,
+  save_raw_event, Orthobox_States, Orthobox_Component
+} from "../orthobox_components";
 
 import React, {Component} from 'react';
 import {render} from 'react-dom';
@@ -29,18 +32,18 @@ let task = 'ltr';
 
 HID_message_handlers.peg = action(save_raw_event((timestamp, location, state) => {
   pegs[location] = Boolean(state);
-  switch (orthobox_state.state) {
-    case Orthobox.states.waiting:
-    case Orthobox.states.ready:
+  switch (orthobox.state) {
+    case Orthobox_States.waiting:
+    case Orthobox_States.ready:
       if (all_left()) {
-        orthobox_state.set_up = true;
+        orthobox.set_up = true;
       }
       break;
-    case Orthobox.states.exercise:
+    case Orthobox_States.exercise:
       if (task === 'ltr' && all_right()) {
         task = 'rtl';
       } else if (task === 'rtl' && all_left()) {
-        orthobox_state.end_exercise();
+        orthobox.end_exercise();
       }
   }
 }, "peg"));
@@ -57,7 +60,7 @@ HID_message_handlers.status = action( (timestamp, serial_number, ...status) => {
   }
   // If first 3 pegs are covered.
   if (all_left()) {
-    orthobox_state.set_up = true;
+    orthobox.set_up = true;
   }
   wrapped_status_func(timestamp, serial_number, ...status);
 });
@@ -99,7 +102,7 @@ class Peggy_Display extends Component {
 }
 
 
-class Peggy extends Orthobox {
+class Peggy extends Orthobox_Component {
   render() {
     return (
       <div className="flex-container column">
@@ -115,6 +118,6 @@ class Peggy extends Orthobox {
 
 
 render(
-  <Peggy session_data={session_data}/>,
+  <Peggy session_data={orthobox.session_data}/>,
   document.getElementById('content')
 );

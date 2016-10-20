@@ -12,26 +12,32 @@ import {session_data_promise, register_USB_message_handlers, exit, user_input, W
 import React, {Component} from 'react';
 import {findDOMNode} from 'react-dom';
 import {observer} from "mobx-react";
-import {observable, computed, action, toJS} from "mobx";
+import {observable, computed, action, runInAction, toJS} from "mobx";
+import kurento_utils from "kurento-utils";
+import kurento_client from "kurento-client";
+window.kurento_utils = kurento_utils;   // FIXME: DEBUG
+window.kurento_client = kurento_client;   // FIXME: DEBUG
 
-
-export let session_data = {}; // FIXME: DEBUG
 
 export let HID_message_handlers = {};
 window.HID_message_handlers = HID_message_handlers;  // FIXME: DEBUG
 
+export const Orthobox_States = {
+  waiting: 'waiting',
+  ready: 'ready',
+  exercise: 'exercise',
+  finished: 'finished'
+};
 
-class Orthobox_State {
-  static states = {
-    waiting: 'waiting',
-    ready: 'ready',
-    exercise: 'exercise',
-    finished: 'finished'
-  };
+function no_op() {
+  DEBUG("no_op");
+}
+
+class Orthobox {
   timer_interval = null;
   @observable session_data = {};
   @observable set_up = false;
-  @observable state = Orthobox.states.waiting;
+  @observable state = Orthobox_States.waiting;
   @observable tool_state = null;
   // @observable recording = false;
   @observable start_time = null;
@@ -51,9 +57,11 @@ class Orthobox_State {
   }
   @observable pokes = [];
   raw_events = [];
+  stop_recording = no_op;
   end_exercise() {
+    this.stop_recording();
     this.end_time = Date.now();
-    this.state = Orthobox.states.finished;
+    this.state = Orthobox_States.finished;
     clearInterval(this.timer_interval);
     Object.assign(this.session_data, this.results);
     // send_results(this.session_data);
@@ -61,8 +69,11 @@ class Orthobox_State {
     user_input(`You took ${Math.floor(this.results.elapsed_time / 1000)} seconds and made ${this.error_count} errors.`, {Exit: exit});
   }
   start_exercise() {
+    if (!this.recording) {
+      return user_input('Error: Exercise will not begin unless video is recording.', {OK: no_op});
+    }
     this.start_time = Date.now();
-    this.state = Orthobox.states.exercise;
+    this.state = Orthobox_States.exercise;
     this.timer_interval = setInterval(() => {this.timer += 1}, 1000);
   }
   @computed get results() {
@@ -81,8 +92,8 @@ class Orthobox_State {
 }
 
 
-export let orthobox_state = new Orthobox_State();
-window.orthobox = orthobox_state; // FIXME: DEBUG
+export let orthobox = new Orthobox();
+window.orthobox = orthobox; // FIXME: DEBUG
 
 
 function simplify_timestamp(timestamp) {
@@ -103,7 +114,7 @@ let TOOL_STATES = {
 export function save_raw_event(wrapped, name) {
   return function (...args) {
     DEBUG(`orthobox.raw_events.push({${name}: [${args}]});`);
-    orthobox_state.raw_events.push({[name]: {...args}});
+    orthobox.raw_events.push({[name]: {...args}});
     return wrapped(...args);
   };
 }
@@ -111,16 +122,16 @@ export function save_raw_event(wrapped, name) {
 
 HID_message_handlers.wall_error = action(save_raw_event((timestamp, duration) => {
   // let timestamp = simplify_timestamp(timestamp);
-  if (orthobox_state.state === Orthobox.states.exercise) {
-    orthobox_state.wall_errors.push({timestamp, duration});
+  if (orthobox.state === Orthobox_States.exercise) {
+    orthobox.wall_errors.push({timestamp, duration});
   }
 }, 'wall_error'));
 
 
 HID_message_handlers.drop_error = action(save_raw_event((timestamp, duration) => {
   // let timestamp = simplify_timestamp(timestamp);
-  if (orthobox_state.state === Orthobox.states.exercise) {
-    orthobox_state.drop_errors.push({timestamp});
+  if (orthobox.state === Orthobox_States.exercise) {
+    orthobox.drop_errors.push({timestamp});
   }
 }, 'drop_error'));
 
@@ -142,11 +153,11 @@ HID_message_handlers.status = action(save_raw_event(async (timestamp, serial_num
   }
 
   // Set tool state based on bits 2 & 3 in 1st byte.
-  orthobox_state.tool_state = TOOL_STATES[(byte1 >> 1) & 0b11];
+  orthobox.tool_state = TOOL_STATES[(byte1 >> 1) & 0b11];
 
-  while (orthobox_state.tool_state === 'unplugged') {
+  while (orthobox.tool_state === 'unplugged') {
     try {
-      await user_input("Tool Not Connected", {Retry: () => {}, Quit: exit})
+      await user_input("Tool Not Connected", {Retry: no_op, Quit: exit})
     } catch (error) {
       if (error instanceof Window_Closed_Error) {
         exit();
@@ -154,40 +165,41 @@ HID_message_handlers.status = action(save_raw_event(async (timestamp, serial_num
     }
   }
 
-  if (orthobox_state.set_up && orthobox_state.tool_state === 'in') {
-    orthobox_state.state = Orthobox.states.ready;
+  if (orthobox.set_up && orthobox.tool_state === 'in') {
+    orthobox.state = Orthobox_States.ready;
   }
 
 }, 'status'));
 
 
 HID_message_handlers.tool = action(save_raw_event((timestamp, state) => {
-  orthobox_state.tool_state = TOOL_STATES[state];
+  orthobox.tool_state = TOOL_STATES[state];
   switch (state) {
     case 0:   // Out
-      switch (orthobox_state.state) {
-        case Orthobox.states.ready:
-          if (orthobox_state.set_up) {
-            orthobox_state.start_exercise();
+      switch (orthobox.state) {
+        case Orthobox_States.ready:
+          if (orthobox.set_up) {
+            orthobox.state = Orthobox_States.waiting;   // Set to waiting in case video isn't recording.
+            orthobox.start_exercise();  // State set in function.
           }
           break;
       }
       break;
     case 1:   // In
-      switch (orthobox_state.state) {
-        case Orthobox.states.waiting:
-          if (orthobox_state.set_up) {
-            orthobox_state.state = Orthobox.states.ready;
+      switch (orthobox.state) {
+        case Orthobox_States.waiting:
+          if (orthobox.set_up) {
+            orthobox.state = Orthobox_States.ready;
           }
           break;
       }
       break;
     case 2:
-      switch (orthobox_state.state) {
-        case Orthobox.states.ready:
-          orthobox_state.state = Orthobox.states.waiting;
+      switch (orthobox.state) {
+        case Orthobox_States.ready:
+          orthobox.state = Orthobox_States.waiting;
           break;
-        case Orthobox.states.exercise:
+        case Orthobox_States.exercise:
           user_input("Error: Tool Disconnected. Aborting Exercise", {Quit: exit});
           break;
       }
@@ -195,36 +207,33 @@ HID_message_handlers.tool = action(save_raw_event((timestamp, state) => {
   }
 }, 'tool'));
 
-
 HID_message_handlers.poke = action(save_raw_event((timestamp, location) => {
-  if (orthobox_state.state === Orthobox.states.exercise) {
-    orthobox_state.pokes.push({poke: {timestamp, location}});
-    if (orthobox_state.pokes.length >= 10) {
-      orthobox_state.end_exercise();
+  if (orthobox.state === Orthobox_States.exercise) {
+    orthobox.pokes.push({poke: {timestamp, location}});
+    if (orthobox.pokes.length >= 10) {
+      orthobox.end_exercise();
     }
   }
 }, 'poke'));
 
-
-export class Orthobox extends View_Port {
+export class Orthobox_Component extends View_Port {
   componentDidMount() {
     register_USB_message_handlers(HID_message_handlers);
   }
 }
-
 
 @observer
 export class Status_Bar extends Component {
   render() {
     let timer = null;
     let error_count = null;
-    switch (orthobox_state.state) {
-      case Orthobox.states.exercise:
-      case Orthobox.states.finished:
-        timer = `Elapsed Time: ${orthobox_state.timer}`;
-        error_count = `Errors: ${orthobox_state.error_count}`;
+    switch (orthobox.state) {
+      case Orthobox_States.exercise:
+      case Orthobox_States.finished:
+        timer = `Elapsed Time: ${orthobox.timer}`;
+        error_count = `Errors: ${orthobox.error_count}`;
         break;
-      case Orthobox.states.ready:
+      case Orthobox_States.ready:
         timer = `Elapsed Time: 0`;
         error_count = `Errors: 0`;
     }
@@ -255,60 +264,157 @@ export class Status_Bar extends Component {
   }
 }
 
-
+/**
+ * Mirror video input back to user.
+ *
+ * Takes set_video_player and set_video_stream callbacks as props to return video node and video stream, respectively.
+ */
 class Video_Display extends Component {
   constructor(props) {
     super(props);
     this.state = {src: null};
     this.streams = [];
-    this.on_loaded_metadata = this.on_loaded_metadata.bind(this);
   }
-
   componentDidMount() {
-    // FIXME: Basically this whole class, but especially, use https://github.com/webrtc/adapter
-    navigator.webkitGetUserMedia(
-      {video: true},
-      (mediaStream => {
+    navigator.mediaDevices.getUserMedia({video: true})
+      .then(mediaStream => {
+        this.props.set_video_stream && this.props.set_video_stream(mediaStream);
+        window.video_stream = mediaStream; // FIXME: DEBUG
         this.streams.push(mediaStream);
         this.setState({src: window.URL.createObjectURL(mediaStream)});
-      }),
-      (error => {
-        console.log(error);
       })
-    )
+      .catch(error => {
+        console.log(error);
+      });
+    this.props.set_video_player && this.props.set_video_player(findDOMNode(this));
   }
-
   componentWillUnmount() {
     this.streams.forEach(stream => stream.getTracks().forEach(track => track.stop()))
   }
-
-  on_loaded_metadata(e) {
-    DEBUG(e);
-    findDOMNode(this).play();
-  };
-
   render() {
     return (
-      <video src={this.state.src} onLoadedMetadata={this.on_loaded_metadata}/>
+      <video src={this.state.src} autoPlay/>
     )
   }
 }
 
-
-// @observer
+@observer
 export class Video_Recorder extends Component {
+  constructor(props) {
+    super(props);
+    this.video_player = null;
+    this.video_stream = null;
+    this.set_video_player = this.set_video_player.bind(this);
+    this.set_video_stream = this.set_video_stream.bind(this);
+    this.record = this.record.bind(this);
+  }
+  set_video_player(video_player) {
+    this.video_player = video_player;
+  }
+  set_video_stream(video_stream) {
+    this.video_stream = video_stream;
+  }
+  @action
+  async record() {  // TODO: Wrap in try/catch and report error to user.
+    if (orthobox.state != Orthobox_States.ready) {
+      return user_input("Error: Recording will not begin until device is ready.", {OK: no_op})
+    }
+    let session = orthobox.session_data;
+    let options = {
+      localVideo: this.video_player,
+      videoStream: this.video_stream,
+      // TODO: Additional options
+    };
+    let webRTC_peer = await new Promise((resolve, reject) => {
+      kurento_utils.WebRtcPeer.WebRtcPeerSendonly(options, (error) => {   // FIXME: remove or fix kurento-utils.
+        if (error) {
+          reject(error);
+        } else {
+          resolve(this);  // kurento_utils binds 'this' to the callback, because this function is actually a pile of steaming shit wrapped in an object.
+        }
+      })
+    });
+    let offer = await new Promise((resolve, reject) => {
+      webRTC_peer.generateOffer((error, _) => {
+        if (error) { reject(error) } else { resolve(_) }
+      })
+    });
+    let client = await new Promise((resolve, reject) => {
+      kurento_client(session.kurento_url, (error, _) => {
+        if (error) { reject(error) } else { resolve(_) }
+      })
+    });
+    let pipeline = await new Promise((resolve, reject) => {
+      client.create('MediaPipeline', (error, _) => {
+        if (error) { reject(error) } else { resolve(_) }
+      })
+    });
+    let elements =
+      [
+        {type: 'RecorderEndpoint', params: {uri: `file:///${session.kurento_video_directory}/${session.id}.webm`}},
+        {type: 'WebRtcEndpoint', params: {}}
+      ];
+    let [recorder, webRTC] = await new Promise((resolve, reject) => {
+      pipeline.create(elements, (error, _) => {
+        if (error) { reject(error) } else { resolve(_) }
+      })
+    });
+
+    // Set ice callbacks
+    webRTC_peer.on('icecandidate', (candidate) => {
+      DEBUG("Local candidate:", candidate);
+      candidate = kurentoClient.getComplexType('IceCandidate')(candidate);
+      webRTC.addIceCandidate(candidate, (error) => {if (error) console.log(error)});
+    });
+    webRTC.on('OnIceCandidate', (event) => {
+      DEBUG("Remote candidate:", event.candidate);
+      webRTC_peer.addIceCandidate(event.candidate, (error) => {if (error) console.log(error)});
+    });
+
+    let answer = await new Promise((resolve, reject) => {
+      webRTC.processOffer(offer, (error, _) => {
+        if (error) { reject(error) } else { resolve(_) }
+      })
+    });
+    webRTC.gatherCandidates((error) => {if (error) console.log(error)});
+    webRTC_peer.processAnswer(answer);
+
+    await new Promise((resolve, reject) => {
+      client.connect(webRTC, webRTC, recorder, (error) => {
+        if (error) { reject(error) } else { resolve() }
+      })
+    });
+
+    await new Promise((resolve, reject) => {
+      recorder.record((error) => {
+        if (error) { reject(error) } else { resolve() }
+      })
+    });
+
+    let recording = true;
+    runInAction("update recording state", () => orthobox.recording = true);
+    orthobox.stop_recording = () => {
+      if (recording) {
+        recording = false;
+        recorder.stop();
+        pipeline.release();
+        webRTC_peer.dispose();
+      }
+    };
+  }
+  componentWillUnmount() {
+    orthobox.stop_recording();
+  }
   render() {
     return(
       <div className="column flex-grow">
-        <Video_Display />
-        {/*<button id="record" onClick={action(() => orthobox.recording = !orthobox.recording)}> {orthobox.recording ? 'Stop' : 'Start'} Recording </button>*/}
+        <Video_Display set_video_player={this.set_video_player} set_video_stream={this.set_video_stream} />
+        <button id="record" onClick={this.record} hidden={orthobox.recording}> Record </button>
       </div>
     )
   }
 }
 
-
 session_data_promise.then(session_data => {
-  Object.assign(orthobox_state.session_data, session_data);
+  Object.assign(orthobox.session_data, session_data);
 });
-
