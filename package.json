@@ -59,7 +59,8 @@
     "react-dom": "^15.3.0",
     "sdp-translator": "^0.1.24",
     "urijs": "^1.18.1",
-    "uuid": "^2.0.3"
+    "uuid": "^2.0.3",
+    "webrtc-adapter": "^2.0.5"
   },
   "devDependencies": {
     "babel-cli": "^6.11.4",

@@ -4,7 +4,7 @@
 'use strict';
 
 // App-wide DEBUG flag.
-import DEBUG from "../src/debug_logger";
+import DEBUG, {DEBUG_FLAG} from "../src/debug_logger";
 
 import {View_Port} from "../src/UI_utils";
 import {session_data_promise, register_USB_message_handlers, exit, user_input, Window_Closed_Error, send_results} from "../src/XLMS";
@@ -14,13 +14,14 @@ import {findDOMNode} from 'react-dom';
 import {observer} from "mobx-react";
 import {observable, computed, action, runInAction, toJS} from "mobx";
 import kurento_utils from "kurento-utils";
-import kurento_client from "kurento-client";
-window.kurento_utils = kurento_utils;   // FIXME: DEBUG
-window.kurento_client = kurento_client;   // FIXME: DEBUG
+// import kurento_client from "kurento-client";
+import "webrtc-adapter";
+// let kurento_client = kurentoClient.KurentoClient;
+if (DEBUG_FLAG) { window.kurento_utils = kurento_utils; window.kurento_client = kurentoClient; }
 
 
 export let HID_message_handlers = {};
-window.HID_message_handlers = HID_message_handlers;  // FIXME: DEBUG
+if (DEBUG_FLAG) { window.HID_message_handlers = HID_message_handlers; }
 
 export const Orthobox_States = {
   waiting: 'waiting',
@@ -45,7 +46,7 @@ class Orthobox {
   @observable set_up = false;
   @observable state = Orthobox_States.waiting;
   @observable tool_state = null;
-  // @observable recording = false;
+  @observable recording = false;
   @observable start_time = null;
   @observable end_time = null;
   @observable timer = 0;
@@ -99,7 +100,7 @@ class Orthobox {
 
 
 export let orthobox = new Orthobox();
-window.orthobox = orthobox; // FIXME: DEBUG
+if (DEBUG_FLAG) { window.orthobox = orthobox; }
 
 
 function simplify_timestamp(timestamp) {
@@ -285,7 +286,7 @@ class Video_Display extends Component {
     navigator.mediaDevices.getUserMedia({video: true})
       .then(mediaStream => {
         this.props.set_video_stream && this.props.set_video_stream(mediaStream);
-        window.video_stream = mediaStream; // FIXME: DEBUG
+        if (DEBUG_FLAG) { window.video_stream = mediaStream; }
         this.streams.push(mediaStream);
         this.setState({src: window.URL.createObjectURL(mediaStream)});
       })
@@ -318,93 +319,84 @@ export class Video_Recorder extends Component {
   set_video_stream(video_stream) {
     this.video_stream = video_stream;
   }
-  @action
-  async record() {  // TODO: Wrap in try/catch and report error to user.
+  record() {  // TODO: Wrap in try/catch and report error to user.
     if (orthobox.state != Orthobox_States.ready) {
       return user_input("Error: Recording will not begin until device is ready.", {OK: no_op})
     }
+    // Nuke the existing media streams so that kurento-client can recreate them because passing them in as an doesn't actually work.
+    this.video_stream.getTracks().forEach(track => track.stop());
+    this.video_player.src = '';
     let session = orthobox.session_data;
     let options = {
       localVideo: this.video_player,
-      videoStream: this.video_stream,
+      // videoStream: this.video_stream,  // You would think this would work, but it doesn't, actually.
       // TODO: Additional options
     };
-    let webRTC_peer = await new Promise((resolve, reject) => {
-      kurento_utils.WebRtcPeer.WebRtcPeerSendonly(options, (error) => {   // FIXME: remove or fix kurento-utils.
-        if (error) {
-          reject(error);
-        } else {
-          resolve(this);  // kurento_utils binds 'this' to the callback, because this function is actually a pile of steaming shit wrapped in an object.
-        }
-      })
+    DEBUG("options:", options);
+    kurento_utils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {   // FIXME: remove or fix kurento-utils.
+      if (error) { return on_error(error); }
+      let webRTC_peer = this;  // kurento_utils binds 'this' to the callback, because this function is actually a pile of steaming shit wrapped in an object.
+      DEBUG("webRTC_peer:", webRTC_peer);
+      webRTC_peer.generateOffer((error, offer) => {
+        if (error) { return on_error(error); }
+        DEBUG("offer:", offer);
+        kurentoClient.KurentoClient(session.video_configuration.url).then((client) => {
+          DEBUG("got kurento_client:", client);
+          client.create('MediaPipeline', (error, pipeline) => {
+            DEBUG("pipeline:", pipeline);
+            let elements =
+              [
+                {
+                  type: 'RecorderEndpoint',
+                  params: {uri: `file:///${session.video_configuration.video_directory}/${session.id}.webm`}
+                },
+                {type: 'WebRtcEndpoint', params: {}}
+              ];
+            pipeline.create(elements, (error, [recorder, webRTC]) => {
+              if (error) { return on_error(error); }
+              // Set ice callbacks
+              webRTC_peer.on('icecandidate', (candidate) => {
+                DEBUG("Local candidate:", candidate);
+                candidate = kurentoClient.getComplexType('IceCandidate')(candidate);
+                webRTC.addIceCandidate(candidate, on_error);
+              });
+              webRTC.on('OnIceCandidate', (event) => {
+                DEBUG("Remote candidate:", event.candidate);
+                webRTC_peer.addIceCandidate(event.candidate, on_error);
+              });
+              webRTC.processOffer(offer, (error, answer) => {
+                if (error) { return on_error(error); }
+                DEBUG("gathering candidates");
+                webRTC.gatherCandidates(on_error);
+                DEBUG("processing answer");
+                webRTC_peer.processAnswer(answer);
+              });
+              DEBUG("connecting");
+              client.connect(webRTC, webRTC, recorder, (error) => {
+                if (error) { return on_error(error); }
+                DEBUG("connected");
+                recorder.record(action((error) => {
+                  if (error) { return on_error(error); }
+                  DEBUG("recording");
+                  let recording = true;
+                  orthobox.recording = true;
+                  orthobox.stop_recording = () => {
+                    if (recording) {
+                      recording = false;
+                      recorder.stop();
+                      pipeline.release();
+                      webRTC_peer.dispose();
+                      options.localVideo.src = '';
+                      // options.videoStream.getTracks().forEach(track => track.stop())
+                    }
+                  };
+                }));
+              })
+            })
+          });
+        });
+      });
     });
-    let offer = await new Promise((resolve, reject) => {
-      webRTC_peer.generateOffer((error, _) => {
-        if (error) { reject(error) } else { resolve(_) }
-      })
-    });
-    let client = await new Promise((resolve, reject) => {
-      kurento_client(session.kurento_url, (error, _) => {
-        if (error) { reject(error) } else { resolve(_) }
-      })
-    });
-    let pipeline = await new Promise((resolve, reject) => {
-      client.create('MediaPipeline', (error, _) => {
-        if (error) { reject(error) } else { resolve(_) }
-      })
-    });
-    let elements =
-      [
-        {type: 'RecorderEndpoint', params: {uri: `file:///${session.kurento_video_directory}/${session.id}.webm`}},
-        {type: 'WebRtcEndpoint', params: {}}
-      ];
-    let [recorder, webRTC] = await new Promise((resolve, reject) => {
-      pipeline.create(elements, (error, _) => {
-        if (error) { reject(error) } else { resolve(_) }
-      })
-    });
-
-    // Set ice callbacks
-    webRTC_peer.on('icecandidate', (candidate) => {
-      DEBUG("Local candidate:", candidate);
-      candidate = kurentoClient.getComplexType('IceCandidate')(candidate);
-      webRTC.addIceCandidate(candidate, on_error);
-    });
-    webRTC.on('OnIceCandidate', (event) => {
-      DEBUG("Remote candidate:", event.candidate);
-      webRTC_peer.addIceCandidate(event.candidate, on_error);
-    });
-
-    let answer = await new Promise((resolve, reject) => {
-      webRTC.processOffer(offer, (error, _) => {
-        if (error) { reject(error) } else { resolve(_) }
-      })
-    });
-    webRTC.gatherCandidates(on_error);
-    webRTC_peer.processAnswer(answer);
-
-    await new Promise((resolve, reject) => {
-      client.connect(webRTC, webRTC, recorder, (error) => {
-        if (error) { reject(error) } else { resolve() }
-      })
-    });
-
-    await new Promise((resolve, reject) => {
-      recorder.record((error) => {
-        if (error) { reject(error) } else { resolve() }
-      })
-    });
-
-    let recording = true;
-    runInAction("update recording state", () => orthobox.recording = true);
-    orthobox.stop_recording = () => {
-      if (recording) {
-        recording = false;
-        recorder.stop();
-        pipeline.release();
-        webRTC_peer.dispose();
-      }
-    };
   }
   componentWillUnmount() {
     orthobox.stop_recording();

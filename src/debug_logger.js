@@ -3,10 +3,10 @@
  */
 "use strict";
 
-const DEBUG = true;
+export const DEBUG_FLAG = true;
 
 export default function (...args) {
-  if (DEBUG) {
+  if (DEBUG_FLAG) {
     console.log(...args);
   }
 };

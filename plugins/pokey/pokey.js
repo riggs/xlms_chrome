@@ -3,7 +3,7 @@
  */
 'use strict';
 
-import {Status_Bar, Video_Recorder, session_data, orthobox, Orthobox_Component} from "../orthobox_components";
+import {Status_Bar, Video_Recorder, orthobox, Orthobox_Component} from "../orthobox_components";
 
 import React from 'react';
 import {render} from 'react-dom';
@@ -27,7 +27,7 @@ class Pokey extends Orthobox_Component {
 
 
 render(
-  <Pokey session_data={session_data}/>,
+  <Pokey session_data={orthobox.session_data}/>,
   document.getElementById('content')
 );
 

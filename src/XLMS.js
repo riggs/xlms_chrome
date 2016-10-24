@@ -57,6 +57,7 @@ export async function user_input(message, options) {
   let request = {message: message, option_strings: Object.keys(options)};
 
   let result = await send(request);
+  // DEBUG(`${message}: ${result}`);
   if (result === null) {
     throw new Window_Closed_Error();
   } else {

@@ -7,7 +7,7 @@
 
 
 // App-wide DEBUG logging function.
-import DEBUG from "./debug_logger";
+import DEBUG, {DEBUG_FLAG} from "./debug_logger";
 
 // External library imports.
 import URI from 'urijs';
@@ -27,7 +27,8 @@ async function init() {
   DEBUG(`endpoint_URL: ${endpoint_URL}`);
 
   let session_data = await XLMS_REST.get_session_data(endpoint_URL);
-  DEBUG(session_data); window.session_data = session_data;
+  DEBUG(session_data);
+  if (DEBUG_FLAG) {window.session_data = session_data;}
 
   // Normalize data for chrome.hid API.
   let device_filter = [];
@@ -36,7 +37,7 @@ async function init() {
   });
 
   let exit = () => chrome.app.window.current().close();
-  window.exit = exit; // FIXME: DEBUG
+  if (DEBUG_FLAG) {window.exit = exit;}
 
   // Ensure a compatible device is connected.
   async function connect(filter) {
@@ -70,6 +71,7 @@ async function init() {
 
   // Initialize plugin.
   const plugin = document.getElementById('plugin');
+  plugin.clearData({since: 0}, {cache: true});
   let set_plugin_size = () => {
     plugin.style.height = window.innerHeight + "px";
     plugin.style.width = window.innerWidth + "px";
@@ -85,7 +87,8 @@ async function init() {
 
   // Navigate plugin to content hosted in XLMS.
   // TODO: Dev setting causes window prompt for location to load plugin from.
-  // DEBUG(`Setting plugin_URL to localhost`); session_data.plugin_URL = "http://localhost/~riggs/operation/index.html";
+  // DEBUG(`Setting plugin_URL to localhost`);
+  // if (DEBUG_FLAG) {session_data.plugin_URL = "http://localhost/~riggs/pokey/index.html";}
   plugin.src = session_data.plugin_URL;
 
   // Explicitly allow getUserMedia access from the plugin.
