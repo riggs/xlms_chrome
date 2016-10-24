@@ -8,6 +8,8 @@ hardware:
 configuration:
   - description:  "Hardware Task Timeout"
     default:      0
+  - description:  "Error threshold length in ms"
+    default:      350
   - description:  "Target 1"
     default:      0
   - description:  "Target 2"

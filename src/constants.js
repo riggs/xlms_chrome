@@ -11,5 +11,4 @@ export let endpoint_query_parameter = "endpoint";
 export let vendor_ID_key = 'vendorID';
 export let product_ID_key = 'productID';
 
-// export let app_origin = "chrome-extension://fpfmfigelfacjdeonglpnkgbilpbopdi";
-export let app_origin = "chrome-extension://fckolomidkehbkflfenpencjcblnmoep";
+export let app_origin = "chrome-extension://iojlopipcianjfbkkkfpffjmoooojhph";
