@@ -7,7 +7,7 @@
 
 
 // App-wide DEBUG logging function.
-import DEBUG, {DEBUG_FLAG} from "./debug_logger";
+import DEBUG, {DEVEL} from "./debug_logger";
 
 // External library imports.
 import URI from 'urijs';
@@ -28,7 +28,7 @@ async function init() {
 
   let session_data = await XLMS_REST.get_session_data(endpoint_URL);
   DEBUG(session_data);
-  if (DEBUG_FLAG) {window.session_data = session_data;}
+  if (DEVEL) {window.session_data = session_data;}
 
   // Normalize data for chrome.hid API.
   let device_filter = [];
@@ -37,7 +37,7 @@ async function init() {
   });
 
   let exit = () => chrome.app.window.current().close();
-  if (DEBUG_FLAG) {window.exit = exit;}
+  if (DEVEL) {window.exit = exit;}
 
   // Ensure a compatible device is connected.
   async function connect(filter) {
@@ -88,7 +88,7 @@ async function init() {
   // Navigate plugin to content hosted in XLMS.
   // TODO: Dev setting causes window prompt for location to load plugin from.
   // DEBUG(`Setting plugin_URL to localhost`);
-  // if (DEBUG_FLAG) {session_data.plugin_URL = "http://localhost/~riggs/pokey/index.html";}
+  if (DEVEL) {session_data.plugin_URL = "http://localhost/~riggs/pokey/index.html";}
   plugin.src = session_data.plugin_URL;
 
   // Explicitly allow getUserMedia access from the plugin.
@@ -172,7 +172,7 @@ async function init() {
 
   // 'configuration' object is an array of objects, with each object having a single key: value pair.
   // This is to ensure the order is consistent.
-  device.set_feature('config', ...session_data.configuration.map(obj => obj[Object.keys(obj)[0]]));
+  device.set_feature('config', ...session_data.configuration.map(Number));
 
   // TODO: Send device timestamp.
   device.send('timestamp', Date.now());

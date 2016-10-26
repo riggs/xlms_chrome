@@ -13,6 +13,7 @@
   "url_handlers": {
     "launch_exercise": {
       "matches": [
+        "https://demo.xlms.org/exercise*",
         "https://umn.xlms.org/exercise*"
       ],
       "title": "Launch Exercise"
@@ -24,6 +25,7 @@
       {"vendorId": 1003, "productId": 8256},
       {"vendorId": 1003, "productId": 8257}
     ]},
+    "https://demo.xlms.org/",
     "https://umn.xlms.org/",
     "videoCapture",
     "webview"

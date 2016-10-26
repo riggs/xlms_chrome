@@ -4,6 +4,8 @@
  * 'Magic' constant strings collected in one place.
  */
 
+import {DEVEL} from "./debug_logger";
+
 // Query parameter used in launch url to specify REST API endpoint.
 export let endpoint_query_parameter = "endpoint";
 
@@ -12,3 +14,4 @@ export let vendor_ID_key = 'vendorID';
 export let product_ID_key = 'productID';
 
 export let app_origin = "chrome-extension://iojlopipcianjfbkkkfpffjmoooojhph";
+if (DEVEL) { app_origin = "chrome-extension://fckolomidkehbkflfenpencjcblnmoep"; }

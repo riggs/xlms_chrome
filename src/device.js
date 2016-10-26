@@ -6,7 +6,7 @@
 "use strict";
 
 // App-wide DEBUG logging function.
-// import DEBUG from "./debug_logger";
+import DEBUG from "./debug_logger";
 
 // External Libraries.
 import ChromePromise from 'chrome-promise';
@@ -51,6 +51,17 @@ export function initialize_device() {
 initialize_device();
 
 
+function reset_module(removed_device_ID) {
+  // Ignore other removed devices.
+  if (removed_device_ID === device.device_ID) {
+    // Reset device object.
+    initialize_device();
+    // Clean up after yourself.
+    chrome.hid.onDeviceRemoved.removeListener(reset_module);
+  }
+}
+
+
 let utf_8_decoder = new TextDecoder('utf-8', {fatal: true});
 let utf_8_encoder = new TextEncoder('utf-8', {fatal: true});
 
@@ -78,7 +89,7 @@ function parse_admin_report(buffer) {
   for (let i = 0; i < admin_report.byteLength; i++) {
     if (admin_report[i] !== current_report[i]) {
       // FIXME: Handle future versions of protocol.
-      // DEBUG(`byte ${i} discrepancy: admin: ${admin_report[i]}, report: ${current_report[i]}`);
+      DEBUG(`byte ${i} discrepancy: admin: ${admin_report[i]}, report: ${current_report[i]}`);
       reset_module(device.device_ID);
       throw new DeviceError("Incompatible device.");
     }
@@ -201,7 +212,7 @@ function parse_admin_report(buffer) {
                 let data_view = new DataView(buffer, offset, serialization_length);
                 data_view.setUint32(0, high);
                 data_view.setUint32(4, low);
-                // DEBUG(`Uint64 pack ${value} to ${hex_parser(buffer.slice(offset, serialization_length))}`)
+                DEBUG(`Uint64 pack ${value} to ${hex_parser(buffer.slice(offset, serialization_length))}`)
               });
               break;
             case 1:   // Uint8
@@ -215,7 +226,7 @@ function parse_admin_report(buffer) {
               });
               // pack_funcs.push((value, buffer) => new DataView(buffer)[`setUint${bits}`](offset, value));
               pack_funcs.push((value, buffer) => {
-                // DEBUG(`DataView(${hex_parser(buffer)}).setUint${bits}(${offset}, ${value})`);
+                DEBUG(`DataView(${hex_parser(buffer)}).setUint${bits}(${offset}, ${value})`);
                 return new DataView(buffer)[`setUint${bits}`](offset, value)
               });
               break;
@@ -252,7 +263,7 @@ function parse_admin_report(buffer) {
               });
               // pack_funcs.push((value, buffer) => new DataView(buffer)[`setFloat${bits}`](offset, value));
               pack_funcs.push((value, buffer) => {
-                // DEBUG(`DataView(${hex_parser(buffer)}).setFloat${bits}(${offset}, ${value})`);
+                DEBUG(`DataView(${hex_parser(buffer)}).setFloat${bits}(${offset}, ${value})`);
                 return new DataView(buffer)[`setFloat${bits}`](offset, value)
               });
                break;
@@ -304,17 +315,6 @@ function parse_admin_report(buffer) {
 }
 
 
-function reset_module(removed_device_ID) {
-  // Ignore other removed devices.
-  if (removed_device_ID === device.device_ID) {
-    // Reset device object.
-    initialize_device();
-    // Clean up after yourself.
-    chrome.hid.onDeviceRemoved.removeListener(reset_module);
-  }
-}
-
-
 function verify_connection() {
   if (device.connection_ID === null) {
     throw new DeviceError("No Device Connected.");
@@ -356,8 +356,9 @@ export async function set_feature(report_name, ...data) {
   verify_connection();
   let report_ID = device.report_names[FEATURE_REPORT][report_name];
   if (typeof report_ID === "undefined") { return null }
+  DEBUG("data:", ...data);
   let data_buffer = device.reports[report_ID][FEATURE_REPORT].pack(data);
-  // DEBUG(`set feature ID:${report_ID} ${hex_parser(data_buffer)}`);
+  DEBUG(`set feature ID:${report_ID} ${hex_parser(data_buffer)}`);
   return await chrome.promise.hid.sendFeatureReport(device.connection_ID, report_ID, data_buffer);
 }
 

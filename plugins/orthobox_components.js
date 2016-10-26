@@ -4,7 +4,7 @@
 'use strict';
 
 // App-wide DEBUG flag.
-import DEBUG, {DEBUG_FLAG} from "../src/debug_logger";
+import DEBUG, {DEVEL} from "../src/debug_logger";
 
 import {View_Port} from "../src/UI_utils";
 import {session_data_promise, register_USB_message_handlers, exit, user_input, Window_Closed_Error, send_results} from "../src/XLMS";
@@ -17,11 +17,11 @@ import kurento_utils from "kurento-utils";
 // import kurento_client from "kurento-client";
 import "webrtc-adapter";
 // let kurento_client = kurentoClient.KurentoClient;
-if (DEBUG_FLAG) { window.kurento_utils = kurento_utils; window.kurento_client = kurentoClient; }
+if (DEVEL) { window.kurento_utils = kurento_utils; window.kurento_client = kurentoClient; }
 
 
 export let HID_message_handlers = {};
-if (DEBUG_FLAG) { window.HID_message_handlers = HID_message_handlers; }
+if (DEVEL) { window.HID_message_handlers = HID_message_handlers; }
 
 export const Orthobox_States = {
   waiting: 'waiting',
@@ -100,7 +100,7 @@ class Orthobox {
 
 
 export let orthobox = new Orthobox();
-if (DEBUG_FLAG) { window.orthobox = orthobox; }
+if (DEVEL) { window.orthobox = orthobox; }
 
 
 function simplify_timestamp(timestamp) {
@@ -286,7 +286,7 @@ class Video_Display extends Component {
     navigator.mediaDevices.getUserMedia({video: true})
       .then(mediaStream => {
         this.props.set_video_stream && this.props.set_video_stream(mediaStream);
-        if (DEBUG_FLAG) { window.video_stream = mediaStream; }
+        if (DEVEL) { window.video_stream = mediaStream; }
         this.streams.push(mediaStream);
         this.setState({src: window.URL.createObjectURL(mediaStream)});
       })
