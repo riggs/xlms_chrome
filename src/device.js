@@ -6,7 +6,7 @@
 "use strict";
 
 // App-wide DEBUG logging function.
-import DEBUG from "./debug_logger";
+import {DEBUG, WARN} from "./utils";
 
 // External Libraries.
 import ChromePromise from 'chrome-promise';
@@ -89,7 +89,7 @@ function parse_admin_report(buffer) {
   for (let i = 0; i < admin_report.byteLength; i++) {
     if (admin_report[i] !== current_report[i]) {
       // FIXME: Handle future versions of protocol.
-      DEBUG(`byte ${i} discrepancy: admin: ${admin_report[i]}, report: ${current_report[i]}`);
+      WARN(`byte ${i} discrepancy: admin: ${admin_report[i]}, report: ${current_report[i]}`);
       reset_module(device.device_ID);
       throw new DeviceError("Incompatible device.");
     }
@@ -212,7 +212,7 @@ function parse_admin_report(buffer) {
                 let data_view = new DataView(buffer, offset, serialization_length);
                 data_view.setUint32(0, high);
                 data_view.setUint32(4, low);
-                DEBUG(`Uint64 pack ${value} to ${hex_parser(buffer.slice(offset, serialization_length))}`)
+                // DEBUG(`Uint64 pack ${value} to ${hex_parser(buffer.slice(offset, serialization_length))}`)
               });
               break;
             case 1:   // Uint8
@@ -226,7 +226,7 @@ function parse_admin_report(buffer) {
               });
               // pack_funcs.push((value, buffer) => new DataView(buffer)[`setUint${bits}`](offset, value));
               pack_funcs.push((value, buffer) => {
-                DEBUG(`DataView(${hex_parser(buffer)}).setUint${bits}(${offset}, ${value})`);
+                // DEBUG(`DataView(${hex_parser(buffer)}).setUint${bits}(${offset}, ${value})`);
                 return new DataView(buffer)[`setUint${bits}`](offset, value)
               });
               break;
@@ -263,7 +263,7 @@ function parse_admin_report(buffer) {
               });
               // pack_funcs.push((value, buffer) => new DataView(buffer)[`setFloat${bits}`](offset, value));
               pack_funcs.push((value, buffer) => {
-                DEBUG(`DataView(${hex_parser(buffer)}).setFloat${bits}(${offset}, ${value})`);
+                // DEBUG(`DataView(${hex_parser(buffer)}).setFloat${bits}(${offset}, ${value})`);
                 return new DataView(buffer)[`setFloat${bits}`](offset, value)
               });
                break;

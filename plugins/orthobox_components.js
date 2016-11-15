@@ -3,8 +3,7 @@
  */
 'use strict';
 
-// App-wide DEBUG flag.
-import DEBUG, {DEVEL} from "../src/debug_logger";
+import {DEBUG, DEVEL, ERROR, noop} from "../src/utils";
 
 import {View_Port} from "../src/UI_utils";
 import {session_data_promise, register_USB_message_handlers, exit, user_input, Window_Closed_Error, send_results} from "../src/XLMS";
@@ -12,7 +11,7 @@ import {session_data_promise, register_USB_message_handlers, exit, user_input, W
 import React, {Component} from 'react';
 import {findDOMNode} from 'react-dom';
 import {observer} from "mobx-react";
-import {observable, computed, action, runInAction, toJS} from "mobx";
+import {observable, computed, action, toJS} from "mobx";
 import kurento_utils from "kurento-utils";
 // import kurento_client from "kurento-client";
 import "webrtc-adapter";
@@ -30,13 +29,9 @@ export const Orthobox_States = {
   finished: 'finished'
 };
 
-function no_op() {
-  DEBUG("no_op");
-}
-
 function on_error(message) {
   if (message) {
-    console.error(message)
+    ERROR(message)
   }
 }
 
@@ -64,7 +59,7 @@ class Orthobox {
   }
   @observable pokes = [];
   raw_events = [];
-  stop_recording = no_op;
+  stop_recording = noop;
   end_exercise() {
     this.stop_recording();
     this.end_time = Date.now();
@@ -77,7 +72,7 @@ class Orthobox {
   }
   start_exercise() {
     if (!this.recording) {
-      return user_input('Error: Exercise will not begin unless video is recording.', {OK: no_op});
+      return user_input('Error: Exercise will not begin unless video is recording.', {OK: noop});
     }
     this.start_time = Date.now();
     this.state = Orthobox_States.exercise;
@@ -164,7 +159,7 @@ HID_message_handlers.status = action(save_raw_event(async (timestamp, serial_num
 
   while (orthobox.tool_state === 'unplugged') {
     try {
-      await user_input("Tool Not Connected", {Retry: no_op, Quit: exit})
+      await user_input("Tool Not Connected", {Retry: noop, Quit: exit})
     } catch (error) {
       if (error instanceof Window_Closed_Error) {
         exit();
@@ -321,7 +316,7 @@ export class Video_Recorder extends Component {
   }
   record() {  // TODO: Wrap in try/catch and report error to user.
     if (orthobox.state != Orthobox_States.ready) {
-      return user_input("Error: Recording will not begin until device is ready.", {OK: no_op})
+      return user_input("Error: Recording will not begin until device is ready.", {OK: noop})
     }
     // Nuke the existing media streams so that kurento-client can recreate them because passing them in as an doesn't actually work.
     this.video_stream.getTracks().forEach(track => track.stop());

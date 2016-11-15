@@ -8,11 +8,8 @@ import {Status_Bar, Video_Recorder, orthobox, Orthobox_Component} from "../ortho
 import React from 'react';
 import {render} from 'react-dom';
 
-// App-wide DEBUG flag.
-import DEBUG from "../../src/debug_logger";
 
 orthobox.set_up = true;
-DEBUG(orthobox);
 
 class Pokey extends Orthobox_Component {
   render() {

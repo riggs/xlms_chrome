@@ -6,8 +6,7 @@
 "use strict";
 
 
-// App-wide DEBUG flag.
-import DEBUG from "./debug_logger";
+import {DEBUG, WARN} from "./utils";
 
 
 export class Window_Closed_Error extends Error {}
@@ -40,7 +39,7 @@ function handle_user_input_response(event) {
     respond(result);
     respond = null;
   } else {
-    console.log(event);
+    WARN("unhandled event:", event);
   }
 }
 
@@ -86,7 +85,7 @@ export function register_USB_message_handlers(handlers) {
         DEBUG(name, ...data);
         break;
       default:
-        console.error(`Bad message handler for ${name}.`);
+        ERROR(`Bad message handler for ${name}.`);
     }
   }
   if (HID_message_port !== null) {
@@ -119,7 +118,7 @@ export let session_data_promise = new Promise((resolve, reject) => {
 
       resolve(event.data.session_data);
     } else {
-      console.log(event);
+      WARN("Unknown message:", event);
     }
   });
 });

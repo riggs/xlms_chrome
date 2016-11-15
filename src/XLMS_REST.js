@@ -5,8 +5,9 @@
  */
 'use strict';
 
-// App-wide DEBUG flag.
-import DEBUG from "./debug_logger";
+import {DEBUG, exit} from "./utils";
+
+import user_input, {Window_Closed_Error} from './user_input';
 
 // External library imports.
 import URI, {decode} from 'urijs';
@@ -22,12 +23,28 @@ export function parse_launch_URL(launch_url) {
 
 
 export async function get_session_data(URL) {
-  // try {
-    let REST_data = await fetch(URL).then(response => response.json());
-  // } catch(error) {
-  // TODO: Error handling, via user_input.
-  //   console.log(error);
-  // }
+  async function retrieve() {
+    try {
+      return await fetch(URL).then(response => response.json());
+    } catch(error) {
+      // TODO: Error handling, via user_input.
+      DEBUG(error);
+      try {
+        let result = await user_input(`Error: ${error.message}`, {
+          Retry: async () => await retrieve(),
+          Exit: exit
+        });
+        return await result();
+      } catch (error) {
+        if (error instanceof Window_Closed_Error) {
+          exit();
+        } else {
+          throw error;
+        }
+      }
+    }
+  }
+  let REST_data = await retrieve();
   DEBUG(REST_data);
 
   return {

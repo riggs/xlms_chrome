@@ -3,8 +3,8 @@
   "name": "XLMS",
   "author": "http://github.com/riggs",
   "description": "XLMS Chrome App",
-  "version": "0.3.0",
-  "version_name": "beta",
+  "version": "0.3.2",
+  "version_name": "0.3.2_dev",
   "app": {
     "background": {
       "scripts": ["background.js"]

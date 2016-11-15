@@ -4,7 +4,7 @@
  * 'Magic' constant strings collected in one place.
  */
 
-import {DEVEL} from "./debug_logger";
+import {DEVEL} from "./utils";
 
 // Query parameter used in launch url to specify REST API endpoint.
 export let endpoint_query_parameter = "endpoint";

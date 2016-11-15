@@ -3,8 +3,6 @@
  */
 'use strict';
 
-// App-wide DEBUG flag.
-import DEBUG from "../../src/debug_logger";
 
 import {
   Status_Bar, Video_Recorder, HID_message_handlers, orthobox,

@@ -6,8 +6,7 @@
 'use strict';
 
 
-// App-wide DEBUG logging function.
-import DEBUG, {DEVEL} from "./debug_logger";
+import {DEBUG, DEVEL, noop} from "./utils";
 
 // External library imports.
 import URI from 'urijs';
@@ -15,7 +14,6 @@ import URI from 'urijs';
 // Internal imports.
 import user_input, {get_input, Window_Closed_Error} from './user_input';
 import * as XLMS_REST from './XLMS_REST';
-import * as video from './video';
 import {vendor_ID_key, product_ID_key} from './constants';
 import * as device from './device';
 
@@ -35,9 +33,6 @@ async function init() {
   session_data.allowed_devices.forEach((device) => {
     device_filter.push({vendorId: device[vendor_ID_key], productId: device[product_ID_key]})
   });
-
-  let exit = () => chrome.app.window.current().close();
-  if (DEVEL) {window.exit = exit;}
 
   // Ensure a compatible device is connected.
   async function connect(filter) {
@@ -88,7 +83,7 @@ async function init() {
   // Navigate plugin to content hosted in XLMS.
   // TODO: Dev setting causes window prompt for location to load plugin from.
   // DEBUG(`Setting plugin_URL to localhost`);
-  if (DEVEL) {session_data.plugin_URL = "http://localhost/~riggs/pokey/index.html";}
+  if (DEVEL) {await user_input("Set window.session_data.plugin_URL to desired location before accepting this message.", {OK: noop});}
   plugin.src = session_data.plugin_URL;
 
   // Explicitly allow getUserMedia access from the plugin.
@@ -117,7 +112,7 @@ async function init() {
         exit();
         break;
       default:
-        console.log(event);
+        WARN("Unknown message:", event);
     }
   };
 

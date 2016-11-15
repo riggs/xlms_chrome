@@ -6,8 +6,7 @@
  */
 'use strict';
 
-// App-wide DEBUG flag.
-import DEBUG from "../src/debug_logger";
+import {DEBUG} from "./utils";
 
 export class Window_Closed_Error extends Error {}
 
