@@ -305,6 +305,7 @@ export class Video_Recorder extends Component {
     this.video_player = video_player;
   }
   add_media_stream(media_stream) {
+    DEBUG('added media_stream:', );
     this.media_streams.push(media_stream);
   }
   record() {
@@ -313,11 +314,12 @@ export class Video_Recorder extends Component {
     }
     // Nuke the existing media streams so that kurento-client can recreate them because passing them in as an doesn't actually work.
     this.media_streams.forEach(stream => stream.getTracks().forEach(track => track.stop()));
+    DEBUG('Stopped media_stream:', this.media_streams);
     this.video_player.src = '';
     let session = orthobox.session_data;
     let options = {
       localVideo: this.video_player,
-      // videoStream: this.video_stream,  // You would think this would work, but it doesn't, actually.
+      // videoStream: this.video_stream,  // You might think this would work, especially if you read the source, but it doesn't, actually.
       // TODO: Additional options
     };
     DEBUG("options:", options);

@@ -7,7 +7,7 @@
 import {
   Status_Bar, Video_Recorder, HID_message_handlers, orthobox,
   save_raw_event, Orthobox_States, Orthobox_Component
-} from "../orthobox_components";
+} from "../orthobox_shared_components";
 
 import React, {Component} from 'react';
 import {render} from 'react-dom';
