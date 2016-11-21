@@ -5,14 +5,13 @@
  */
 'use strict';
 
-import {DEBUG, exit} from "./utils";
-
-import user_input, {Window_Closed_Error} from './user_input';
 
 // External library imports.
 import URI, {decode} from 'urijs';
 
 // Internal imports.
+import {DEBUG, exit} from "./utils";
+import user_input, {Window_Closed_Error} from './user_input';
 import {endpoint_query_parameter} from './constants';
 
 
@@ -27,7 +26,6 @@ export async function get_session_data(URL) {
     try {
       return await fetch(URL).then(response => response.json());
     } catch(error) {
-      // TODO: Error handling, via user_input.
       DEBUG(error);
       try {
         let result = await user_input(`Error: ${error.message}`, {

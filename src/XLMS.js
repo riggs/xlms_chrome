@@ -118,7 +118,7 @@ export let session_data_promise = new Promise((resolve, reject) => {
 
       resolve(event.data.session_data);
     } else {
-      WARN("Unknown message:", event);
+      reject(`Unknown message: ${event}`);
     }
   });
 });

@@ -59,7 +59,7 @@ class Orthobox {
   }
   @observable pokes = [];
   raw_events = [];
-  stop_recording = noop;
+  stop_recording = () => DEBUG("stop_recording but nothing to do.");
   end_exercise() {
     this.stop_recording();
     this.end_time = Date.now();
@@ -98,14 +98,6 @@ export let orthobox = new Orthobox();
 if (DEVEL) { window.orthobox = orthobox; }
 
 
-function simplify_timestamp(timestamp) {
-  /**
-   * Simplify timestamp to second resolution for XLMS.
-   */
-  return Math.floor(timestamp/1000);
-}
-
-
 let TOOL_STATES = {
   0: 'out',
   1: 'in',
@@ -123,7 +115,6 @@ export function save_raw_event(wrapped, name) {
 
 
 HID_message_handlers.wall_error = action(save_raw_event((timestamp, duration) => {
-  // let timestamp = simplify_timestamp(timestamp);
   if (orthobox.state === Orthobox_States.exercise) {
     orthobox.wall_errors.push({timestamp, duration});
   }
@@ -131,7 +122,6 @@ HID_message_handlers.wall_error = action(save_raw_event((timestamp, duration) =>
 
 
 HID_message_handlers.drop_error = action(save_raw_event((timestamp, duration) => {
-  // let timestamp = simplify_timestamp(timestamp);
   if (orthobox.state === Orthobox_States.exercise) {
     orthobox.drop_errors.push({timestamp});
   }
@@ -144,7 +134,7 @@ HID_message_handlers.status = action(save_raw_event(async (timestamp, serial_num
   let byte1 = status[3];
 
   // If tool soldered incorrectly.
-  if (byte1 & 1) {
+  if (byte1 & 1) {  // bit-wise and
     try {
       await user_input("Device Manufactured Incorrectly", {Quit: exit})
     } catch (error) {
@@ -236,8 +226,11 @@ export class Status_Bar extends Component {
         error_count = `Errors: ${orthobox.error_count}`;
         break;
       case Orthobox_States.ready:
-        timer = `Elapsed Time: 0`;
-        error_count = `Errors: 0`;
+        timer = "Ready";
+        // error_count = "start";
+      case Orthobox_States.waiting:
+        timer = "Waiting";
+        // error_count = `Errors:`;
     }
     return (
       <div id="status_bar" className="flex-grow flex-container row">
@@ -247,11 +240,11 @@ export class Status_Bar extends Component {
         {/*</div>*/}
         <div className="flex-grow flex-container column">
           <div className="flex-grow">
-            <h3 id="course_name"> {this.props.course_name} </h3>
+            <h3 id="course_name"> {orthobox.session_data.course_name} </h3>
             {/*<h3 id="course_name"> course_name </h3>*/}
           </div>
           <div className="flex-grow">
-            <h3 id="exercise_name"> {this.props.exercise_name} </h3>
+            <h3 id="exercise_name"> {orthobox.session_data.exercise_name} </h3>
             {/*<h3 id="exercise_name"> exercise_name </h3>*/}
           </div>
         </div>
@@ -269,7 +262,7 @@ export class Status_Bar extends Component {
 /**
  * Mirror video input back to user.
  *
- * Takes set_video_player and set_video_stream callbacks as props to return video node and video stream, respectively.
+ * Takes set_video_player and add_media_stream callbacks as props to return video node and video stream, respectively.
  */
 class Video_Display extends Component {
   constructor(props) {
@@ -280,7 +273,7 @@ class Video_Display extends Component {
   componentDidMount() {
     navigator.mediaDevices.getUserMedia({video: true})
       .then(mediaStream => {
-        this.props.set_video_stream && this.props.set_video_stream(mediaStream);
+        this.props.add_media_stream && this.props.add_media_stream(mediaStream);
         if (DEVEL) { window.video_stream = mediaStream; }
         this.streams.push(mediaStream);
         this.setState({src: window.URL.createObjectURL(mediaStream)});
@@ -303,23 +296,23 @@ export class Video_Recorder extends Component {
   constructor(props) {
     super(props);
     this.video_player = null;
-    this.video_stream = null;
+    this.media_streams = [];
     this.set_video_player = this.set_video_player.bind(this);
-    this.set_video_stream = this.set_video_stream.bind(this);
+    this.add_media_stream = this.add_media_stream.bind(this);
     this.record = this.record.bind(this);
   }
   set_video_player(video_player) {
     this.video_player = video_player;
   }
-  set_video_stream(video_stream) {
-    this.video_stream = video_stream;
+  add_media_stream(media_stream) {
+    this.media_streams.push(media_stream);
   }
-  record() {  // TODO: Wrap in try/catch and report error to user.
+  record() {
     if (orthobox.state != Orthobox_States.ready) {
       return user_input("Error: Recording will not begin until device is ready.", {OK: noop})
     }
     // Nuke the existing media streams so that kurento-client can recreate them because passing them in as an doesn't actually work.
-    this.video_stream.getTracks().forEach(track => track.stop());
+    this.media_streams.forEach(stream => stream.getTracks().forEach(track => track.stop()));
     this.video_player.src = '';
     let session = orthobox.session_data;
     let options = {
@@ -334,7 +327,6 @@ export class Video_Recorder extends Component {
       DEBUG("webRTC_peer:", webRTC_peer);
       webRTC_peer.generateOffer((error, offer) => {
         if (error) { return on_error(error); }
-        DEBUG("offer:", offer);
         kurentoClient.KurentoClient(session.video_configuration.url).then((client) => {
           DEBUG("got kurento_client:", client);
           client.create('MediaPipeline', (error, pipeline) => {
@@ -399,7 +391,7 @@ export class Video_Recorder extends Component {
   render() {
     return(
       <div className="column flex-grow">
-        <Video_Display set_video_player={this.set_video_player} set_video_stream={this.set_video_stream} />
+        <Video_Display set_video_player={this.set_video_player} add_media_stream={this.add_media_stream} />
         <button id="record" onClick={this.record} hidden={orthobox.recording}> Record </button>
       </div>
     )

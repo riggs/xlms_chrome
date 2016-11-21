@@ -19,9 +19,7 @@ export function ERROR(...args) {
   console.error(...args);
 }
 
-export function noop() {
-  DEBUG("noop");
-}
+export function noop() {}
 
 export function exit() {
   chrome.app.window.current().close();

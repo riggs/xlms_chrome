@@ -14,4 +14,5 @@ export let vendor_ID_key = 'vendorID';
 export let product_ID_key = 'productID';
 
 export let app_origin = "chrome-extension://iojlopipcianjfbkkkfpffjmoooojhph";
-if (DEVEL) { app_origin = "chrome-extension://fckolomidkehbkflfenpencjcblnmoep"; }
+if (DEVEL === "test") { app_origin = "chrome-extension://aaigjnokpeighgdafmffegkcchhjocpg"; }
+else if (DEVEL) { app_origin = "chrome-extension://fckolomidkehbkflfenpencjcblnmoep"; }

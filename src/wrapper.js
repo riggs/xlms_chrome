@@ -61,9 +61,6 @@ async function init() {
   }
   let connected_device = await connect(device_filter);
 
-  // TODO: Implement
-  video.configure(session_data.video_configuration);
-
   // Initialize plugin.
   const plugin = document.getElementById('plugin');
   plugin.clearData({since: 0}, {cache: true});
