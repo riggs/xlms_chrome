@@ -15,8 +15,8 @@ class Pokey extends Orthobox_Component {
   render() {
     return (
       <div className="flex-container column">
-        <Status_Bar {...this.props.session_data} {...this.state.viewport}/>
-        <Video_Recorder {...this.props.session_data} {...this.state.viewport}/>
+        <Status_Bar viewport={this.state.viewport} {...this.props}/>
+        <Video_Recorder viewport={this.state.viewport} {...this.props}/>
       </div>
     );
   }
@@ -24,7 +24,7 @@ class Pokey extends Orthobox_Component {
 
 
 render(
-  <Pokey session_data={orthobox.session_data}/>,
+  <Pokey orthobox={orthobox}/>,
   document.getElementById('content')
 );
 

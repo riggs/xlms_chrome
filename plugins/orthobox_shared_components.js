@@ -221,6 +221,7 @@ export class Orthobox_Component extends View_Port {
 @observer
 export class Status_Bar extends Component {
   render() {
+    let orthobox = this.props.orthobox;
     let timer = null;
     let error_count = null;
     switch (orthobox.state) {
@@ -231,12 +232,14 @@ export class Status_Bar extends Component {
         break;
       case Orthobox_States.ready:
         timer = "Ready";
+        break;
       case Orthobox_States.waiting:
         timer = "Waiting";
+        break;
     }
     return (
       <div id="status_bar" className="flex-grow flex-container row">
-        {/*<h2 id="student_name"> {this.props.user_display_name} </h2>*/}
+        {/*<h2 id="student_name"> {this.props.orthobox.session_data.user_display_name} </h2>*/}
         {/*<div className="flex-item">*/}
           {/*<h2 id="student_name"> user_display_name </h2>*/}
         {/*</div>*/}
@@ -311,14 +314,13 @@ export class Video_Recorder extends Component {
     this.media_streams.push(media_stream);
   }
   record() {
-    if (orthobox.state != Orthobox_States.ready) {
+    if (this.props.orthobox.state != Orthobox_States.ready) {
       return user_input("Error: Recording will not begin until device is ready.", {OK: noop})
     }
     // Nuke the existing media streams so that kurento-client can recreate them because passing them in as an doesn't actually work.
     this.media_streams.forEach(stream => stream.getTracks().forEach(track => track.stop()));
     DEBUG(`Stopped media_stream: ${this.media_streams}`);
     this.video_player.src = '';
-    let session = orthobox.session_data;
     let options = {
       localVideo: this.video_player,
       // videoStream: this.video_stream,  // You might think this would work, especially if you read the source, but it doesn't, actually.
@@ -331,7 +333,7 @@ export class Video_Recorder extends Component {
       DEBUG("webRTC_peer:", webRTC_peer);
       webRTC_peer.generateOffer((error, offer) => {
         if (error) { return on_error(error); }
-        kurentoClient.KurentoClient(session.video_configuration.url).then((client) => {
+        kurentoClient.KurentoClient(this.props.session_data.video_configuration.url).then((client) => {
           DEBUG("got kurento_client:", client);
           client.create('MediaPipeline', (error, pipeline) => {
             DEBUG("pipeline:", pipeline);
@@ -339,7 +341,7 @@ export class Video_Recorder extends Component {
               [
                 {
                   type: 'RecorderEndpoint',
-                  params: {uri: `file://${session.video_configuration.video_directory}/${session.id}.webm`}
+                  params: {uri: `file://${this.props.session_data.video_configuration.video_directory}/${this.props.session_data.id}.webm`}
                 },
                 {type: 'WebRtcEndpoint', params: {}}
               ];

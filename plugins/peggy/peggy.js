@@ -89,10 +89,10 @@ class Peggy_Display extends Component {
     return (
       <div id="peggy_display" className="flex-grow flex-container row">
         <div className="flex-grow flex-container column">
-          {[0, 1, 2].map(id => <Peg key={id} id={id} {...this.props}/>)}
+          {[0, 1, 2].map(id => <Peg key={id} id={id} {...this.props.viewport}/>)}
         </div>
         <div className="flex-grow flex-container column">
-          {[3, 4, 5].map(id => <Peg key={id} id={id} {...this.props}/>)}
+          {[3, 4, 5].map(id => <Peg key={id} id={id} {...this.props.viewport}/>)}
         </div>
       </div>
     )
@@ -104,10 +104,10 @@ class Peggy extends Orthobox_Component {
   render() {
     return (
       <div className="flex-container column">
-        <Status_Bar {...this.props.session_data} {...this.state.viewport}/>
+        <Status_Bar viewport={this.state.viewport} {...this.props}/>
         <div className="flex-container row">
-          <Peggy_Display {...this.props.session_data} {...this.state.viewport}/>
-          <Video_Recorder {...this.props.session_data} {...this.state.viewport}/>
+          <Peggy_Display viewport={this.state.viewport} {...this.props}/>
+          <Video_Recorder viewport={this.state.viewport} {...this.props}/>
         </div>
       </div>
     );
@@ -116,6 +116,6 @@ class Peggy extends Orthobox_Component {
 
 
 render(
-  <Peggy session_data={orthobox.session_data}/>,
+  <Peggy orthobox={orthobox}/>,
   document.getElementById('content')
 );
