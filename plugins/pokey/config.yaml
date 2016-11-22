@@ -9,7 +9,7 @@ configuration:
   - description:  "Hardware Task Timeout"
     default:      0
   - description:  "Error threshold length in ms"
-    default:      350
+    default:      400
   - description:  "Target 1"
     default:      0
   - description:  "Target 2"
@@ -37,7 +37,7 @@ metrics:
     values:
       - unit:      Seconds
         threshold:  maximum
-        default:    180
+        default:    150
 
       - unit:      Seconds
         threshold:  minimum
@@ -48,12 +48,12 @@ metrics:
     values:
       - unit:      Count
         threshold:  maximum
-        default:    2
+        default:    0
 
   wall_error_length:
     description:    "Total length of touch errors allowed."
     values:
       - unit:      Total milliseconds
         threshold:  maximum
-        default:    500
+        default:    1600
 ...

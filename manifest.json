@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "XLMS",
+  "name": "XLMS_dev",
   "author": "http://github.com/riggs",
   "description": "XLMS Chrome App",
   "version": "0.3.4",
@@ -27,6 +27,7 @@
     ]},
     "https://demo.xlms.org/",
     "https://umn.xlms.org/",
+    "audioCapture",
     "videoCapture",
     "webview"
   ],

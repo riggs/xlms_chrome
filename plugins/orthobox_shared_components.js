@@ -84,7 +84,7 @@ class Orthobox {
     if (this.error_count > this.session_data.metrics.wall_error_count.maximum) {
       results.success = 0;
     } else {
-      results.success = Math.max(0, Math.min(1, 1 - (1 - 0.6) * (Math.floor(this.elapsed_time / 1000) - minimum) / (maximum - minimum)));
+      results.success = Math.max(0, Math.min(1, 1 - (1 - 0.7) * (Math.floor(this.elapsed_time / 1000) - minimum) / (maximum - minimum)));
     }
     results.start_time = this.start_time;
     results.elapsed_time = this.elapsed_time;
@@ -305,7 +305,7 @@ export class Video_Recorder extends Component {
     this.video_player = video_player;
   }
   add_media_stream(media_stream) {
-    DEBUG('added media_stream:', );
+    DEBUG(`added media_stream: ${media_stream}`);
     this.media_streams.push(media_stream);
   }
   record() {
@@ -314,7 +314,7 @@ export class Video_Recorder extends Component {
     }
     // Nuke the existing media streams so that kurento-client can recreate them because passing them in as an doesn't actually work.
     this.media_streams.forEach(stream => stream.getTracks().forEach(track => track.stop()));
-    DEBUG('Stopped media_stream:', this.media_streams);
+    DEBUG(`Stopped media_stream: ${this.media_streams}`);
     this.video_player.src = '';
     let session = orthobox.session_data;
     let options = {
@@ -323,7 +323,7 @@ export class Video_Recorder extends Component {
       // TODO: Additional options
     };
     DEBUG("options:", options);
-    kurento_utils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {   // FIXME: remove or fix kurento-utils.
+    kurento_utils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {   // FIXME: remove or fix kurento-utils: Sendonly still manages to receive a lot of data.
       if (error) { return on_error(error); }
       let webRTC_peer = this;  // kurento_utils binds 'this' to the callback, because this function is actually a pile of steaming shit wrapped in an object.
       DEBUG("webRTC_peer:", webRTC_peer);
@@ -337,7 +337,7 @@ export class Video_Recorder extends Component {
               [
                 {
                   type: 'RecorderEndpoint',
-                  params: {uri: `file:///${session.video_configuration.video_directory}/${session.id}.webm`}
+                  params: {uri: `file://${session.video_configuration.video_directory}/${session.id}.webm`}
                 },
                 {type: 'WebRtcEndpoint', params: {}}
               ];
