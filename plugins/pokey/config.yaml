@@ -49,11 +49,4 @@ metrics:
       - unit:      Count
         threshold:  maximum
         default:    0
-
-  wall_error_length:
-    description:    "Total length of touch errors allowed."
-    values:
-      - unit:      Total milliseconds
-        threshold:  maximum
-        default:    1600
 ...

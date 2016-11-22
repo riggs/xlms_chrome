@@ -12,7 +12,7 @@ import {
 import React, {Component} from 'react';
 import {render} from 'react-dom';
 import {observer} from "mobx-react";
-import {observable, computed, action, autorun} from "mobx";
+import {observable, action} from "mobx";
 
 
 let pegs = observable(new Array(6));

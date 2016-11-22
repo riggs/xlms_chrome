@@ -81,7 +81,11 @@ class Orthobox {
   @computed get results() {
     let results = {};
     let {maximum, minimum} = this.session_data.metrics.elapsed_time;
-    if (this.error_count > this.session_data.metrics.wall_error_count.maximum) {
+    if (
+      (this.wall_errors.length > this.session_data.metrics.wall_error_count.maximum) ||
+      (this.session_data.metrics.drop_error_count &&
+        this.drop_errors.length > this.session_data.metrics.drop_error_count.maximum)
+    ) {
       results.success = 0;
     } else {
       results.success = Math.max(0, Math.min(1, 1 - (1 - 0.7) * (Math.floor(this.elapsed_time / 1000) - minimum) / (maximum - minimum)));
@@ -227,10 +231,8 @@ export class Status_Bar extends Component {
         break;
       case Orthobox_States.ready:
         timer = "Ready";
-        // error_count = "start";
       case Orthobox_States.waiting:
         timer = "Waiting";
-        // error_count = `Errors:`;
     }
     return (
       <div id="status_bar" className="flex-grow flex-container row">

@@ -30,13 +30,6 @@ metrics:
         threshold:  maximum
         default:    0
 
-  wall_error_length:
-    description:    "Total length of touch errors allowed."
-    values:
-      - unit:       Total milliseconds
-        threshold:  maximum
-        default:    1600
-
   drop_error_count:
     description:    "Number of drops allowed."
     values:
