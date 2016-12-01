@@ -239,7 +239,7 @@ export class Status_Bar extends Component {
     }
     return (
       <div id="status_bar" className="flex-grow flex-container row">
-        {/*<h2 id="student_name"> {this.props.orthobox.session_data.user_display_name} </h2>*/}
+        {/*<h2 id="student_name"> {orthobox.session_data.user_display_name} </h2>*/}
         {/*<div className="flex-item">*/}
           {/*<h2 id="student_name"> user_display_name </h2>*/}
         {/*</div>*/}
@@ -314,7 +314,8 @@ export class Video_Recorder extends Component {
     this.media_streams.push(media_stream);
   }
   record() {
-    if (this.props.orthobox.state != Orthobox_States.ready) {
+    let orthobox = this.props.orthobox;
+    if (orthobox.state != Orthobox_States.ready) {
       return user_input("Error: Recording will not begin until device is ready.", {OK: noop})
     }
     // Nuke the existing media streams so that kurento-client can recreate them because passing them in as an doesn't actually work.
@@ -332,8 +333,9 @@ export class Video_Recorder extends Component {
       let webRTC_peer = this;  // kurento_utils binds 'this' to the callback, because this function is actually a pile of steaming shit wrapped in an object.
       DEBUG("webRTC_peer:", webRTC_peer);
       webRTC_peer.generateOffer((error, offer) => {
+        let session_data = orthobox.session_data;
         if (error) { return on_error(error); }
-        kurentoClient.KurentoClient(this.props.session_data.video_configuration.url).then((client) => {
+        kurentoClient.KurentoClient(session_data.video_configuration.url).then((client) => {
           DEBUG("got kurento_client:", client);
           client.create('MediaPipeline', (error, pipeline) => {
             DEBUG("pipeline:", pipeline);
@@ -341,7 +343,7 @@ export class Video_Recorder extends Component {
               [
                 {
                   type: 'RecorderEndpoint',
-                  params: {uri: `file://${this.props.session_data.video_configuration.video_directory}/${this.props.session_data.id}.webm`}
+                  params: {uri: `file://${session_data.video_configuration.video_directory}/${session_data.id}.webm`}
                 },
                 {type: 'WebRtcEndpoint', params: {}}
               ];
@@ -392,13 +394,13 @@ export class Video_Recorder extends Component {
     });
   }
   componentWillUnmount() {
-    orthobox.stop_recording();
+    this.props.orthobox.stop_recording();
   }
   render() {
     return(
       <div className="column flex-grow">
-        <Video_Display set_video_player={this.set_video_player} add_media_stream={this.add_media_stream} />
-        <button id="record" onClick={this.record} hidden={orthobox.recording}> Record </button>
+        <Video_Display set_video_player={this.set_video_player} add_media_stream={this.add_media_stream} viewport={this.props.viewport}/>
+        <button id="record" onClick={this.record} hidden={this.props.orthobox.recording}> Record </button>
       </div>
     )
   }
