@@ -290,9 +290,16 @@ class Video_Display extends Component {
     this.streams.forEach(stream => stream.getTracks().forEach(track => track.stop()))
   }
   render() {
-    return (
-      <video src={this.state.src} autoPlay/>
-    )
+    DEBUG(this.props);
+    if (this.props.viewport.window_width > this.props.viewport.window_height) {   // Wide
+      return (
+        <video src={this.state.src} height={this.props.viewport.window_height*.8} autoPlay/>
+      )
+    } else {  // Tall
+      return (
+        <video src={this.state.src} width={this.props.viewport.window_width*.8} autoPlay/>
+      )
+    }
   }
 }
 
