@@ -6,7 +6,7 @@
 'use strict';
 
 
-import {DEBUG, DEVEL, noop} from "./utils";
+import {DEBUG, DEVEL, noop, exit} from "./utils";
 
 // External library imports.
 import URI from 'urijs';
