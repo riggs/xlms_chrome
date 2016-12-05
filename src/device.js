@@ -364,6 +364,7 @@ export async function set_feature(report_name, ...data) {
 
 
 export async function find(filters) {
+  DEBUG("device filters:", filters);
   let devices = await chrome.promise.hid.getDevices({filters});
   switch (devices.length) {
     case 0:
