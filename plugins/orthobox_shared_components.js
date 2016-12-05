@@ -37,7 +37,7 @@ function on_error(message) {
 
 class Orthobox {
   timer_interval = null;
-  @observable session_data = {};
+  @observable session_data = {course_name: null, exercise_name: null};
   @observable set_up = false;
   @observable state = Orthobox_States.waiting;
   @observable tool_state = null;

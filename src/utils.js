@@ -3,7 +3,7 @@
  */
 "use strict";
 
-export const DEVEL = 0; // Set to something falsey, something truthy, or "test" for test deployment.
+export const DEVEL = 0; // Set to something truthy for development, something falsey for deployment, or "test" for test deployment with test app.
 
 export function DEBUG(...args) {
   if (DEVEL) {

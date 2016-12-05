@@ -15,7 +15,7 @@ export class Window_Closed_Error extends Error {}
 let user_input_port = null;
 let HID_message_port = null;
 let admin_message_port = null;
-let HID_handler = {func: (event) => HID_handler.cache.push(event.data), cache: []};
+let HID_handler = {func: (event) => HID_handler.cache.push(event.data), cache: []};   // By default, cache messsages for later.
 
 
 let source_window = null;
