@@ -75,15 +75,18 @@ function parse_admin_report(buffer) {
   // Defined by the protocol.
   let admin_report = new Uint8Array([0x00, 0x0D, 0x01, 0x04, 0x05, 0x61, 0x64, 0x6D, 0x69, 0x6E, 0x01, 0x00, 0x00]);
 
-  // Create a view of the buffer for the current report.
-  let report_start_byte_offset = 0;
-  let current_report = new Uint8Array(buffer, report_start_byte_offset, admin_report.byteLength);
+  // Get the initial report length from first two bytes.
+  let report_length = (new DataView(buffer, 0, 2)).getUint16();
 
-  // Test to see if admin report is first.
-  if (current_report.byteLength != admin_report.byteLength) {
+  // Test to see if admin report length is correct.
+  if (report_length != admin_report.byteLength) {
     reset_module(device.device_ID);
     throw new DeviceError("Incompatible device.");
   }
+
+  // Create a view of the buffer for the current report.
+  let report_start_byte_offset = 0;
+  let current_report = new Uint8Array(buffer, report_start_byte_offset, report_length);
 
   // Iterate and compare arrays.
   for (let i = 0; i < admin_report.byteLength; i++) {
@@ -96,7 +99,7 @@ function parse_admin_report(buffer) {
   }
 
   // Device appears to be compatible, update byte offset for next Report.
-  report_start_byte_offset += admin_report.byteLength;
+  report_start_byte_offset += report_length;
 
   let result = current_report;
 
